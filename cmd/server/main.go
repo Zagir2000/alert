@@ -1,56 +1,38 @@
 package main
 
 import (
-	"errors"
 	"net/http"
-	"strconv"
+
+	"github.com/Zagir2000/alert/cmd/server/parser"
+	"github.com/Zagir2000/alert/cmd/server/storage"
 )
 
-type MemStorageUsage interface {
-	CollectMetricsAndALerts(res http.ResponseWriter, req *http.Request)
-}
-
-func (c MemStorage) CollectMetricsAndALerts(res http.ResponseWriter, req *http.Request) {
+func CollectMetricsAndALerts(res http.ResponseWriter, req *http.Request) {
+	var storage storage.MemStorageUsage = &storage.MemStorage{}
 	if req.Method != http.MethodPost {
-		// разрешаем только POST-запросы
 		res.WriteHeader(http.StatusMethodNotAllowed)
+
+	}
+	err := storage.CollectMetricsAndALerts(req.URL.String())
+	if err != nil {
+		switch err {
+		case parser.ErrType:
+			res.WriteHeader(http.StatusBadRequest)
+		case parser.ErrValue:
+			res.WriteHeader(http.StatusBadRequest)
+		case parser.ErrNameMetric:
+			res.WriteHeader(http.StatusNotFound)
+		}
 		return
 	}
-	typemetric, value := parser.parseuri(res, req, req.RequestURI)
-	if typemetric == "" && typemetric == "" {
-		return
-	}
-
-	if typemetric == "counter" {
-		valueint64, err := strconv.ParseInt(value, 10, 64)
-		if err != nil {
-			res.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		if valueint64 < 0 {
-			panic(errors.New("gauge cannot decrease in value"))
-		}
-		c.counterdata = map[string]counter{"counter": counter(valueint64) + c.counterdata["counter"]}
-	} else {
-		valuefloat64, err := strconv.ParseFloat(value, 64)
-		if err != nil {
-			res.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		if valuefloat64 < 0 {
-			panic(errors.New("counter cannot decrease in value"))
-		}
-		c.gaugedata = map[string]gauge{"gauge": gauge(valuefloat64) + c.gaugedata["gauge"]}
-	}
-
 	res.WriteHeader(http.StatusOK)
+	return
+
 }
 
 func main() {
-
-	var data MemStorageUsage = MemStorage{}
 	mux := http.NewServeMux()
-	mux.HandleFunc(`/`, data.CollectMetricsAndALerts)
+	mux.HandleFunc(`/`, CollectMetricsAndALerts)
 
 	err := http.ListenAndServe(`:8080`, mux)
 	if err != nil {
