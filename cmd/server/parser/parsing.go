@@ -12,9 +12,9 @@ type Metrics struct {
 	Nametype     string
 }
 
-var ErrValue = errors.New("Value is not correct")
-var ErrType = errors.New("Type metric is not correct")
-var ErrNameMetric = errors.New("Name metric is not exist")
+var ErrValue = errors.New("value is not correct")
+var ErrType = errors.New("type metric is not correct")
+var ErrNameMetric = errors.New("name metric is not exist")
 
 func Parseuri(v string) (Metrics, error) {
 	re, _ := regexp.Compile(`/*[\s\S]+?/`)
