@@ -17,6 +17,7 @@ var ErrType = errors.New("type metric is not correct")
 var ErrNameMetric = errors.New("name metric is not exist")
 
 func Parseuri(v string) (Metrics, error) {
+
 	re, _ := regexp.Compile(`/*[\s\S]+?/`)
 	resregex := re.FindAllString(v+"/", -1)
 	if len(resregex) < 4 {
