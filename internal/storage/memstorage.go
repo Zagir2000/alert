@@ -4,16 +4,13 @@ import (
 	"github.com/Zagir2000/alert/internal/parser"
 )
 
-type Gauge float64
-type Counter int64
-
 type Repository interface {
 	CollectMetricsAndALerts(res string) error
 }
 
 type MemStorage struct {
-	Gaugedata   map[string]Gauge
-	Counterdata map[string]Counter
+	Gaugedata   map[string]float64
+	Counterdata map[string]int64
 }
 
 func (c *MemStorage) CollectMetricsAndALerts(res string) error {
@@ -22,10 +19,10 @@ func (c *MemStorage) CollectMetricsAndALerts(res string) error {
 	if err != nil {
 		return err
 	}
-	if Metric.Nametype == "counter" {
-		c.Counterdata[Metric.Nametype] += Counter(Metric.Valuecounter)
+	if Metric.Type == "counter" {
+		c.Counterdata[Metric.Nametype] = Metric.Valuecounter
 	} else {
-		c.Gaugedata[Metric.Nametype] = Gauge(Metric.Valuecounter)
+		c.Gaugedata[Metric.Nametype] = Metric.Valuegauge
 	}
 	return nil
 }

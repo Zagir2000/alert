@@ -8,12 +8,12 @@ import (
 )
 
 func CollectMetricsAndALerts(res http.ResponseWriter, req *http.Request) {
-	var storage storage.Repository = &storage.MemStorage{}
+	var storage storage.Repository = &storage.MemStorage{Gaugedata: make(map[string]float64), Counterdata: make(map[string]int64)}
 	if req.Method != http.MethodPost {
 		res.WriteHeader(http.StatusMethodNotAllowed)
 
 	}
-	err := storage.CollectMetricsAndALerts(req.URL.String())
+	err := storage.CollectMetricsAndALerts(req.RequestURI)
 	if err != nil {
 		switch err {
 		case parser.ErrType:
