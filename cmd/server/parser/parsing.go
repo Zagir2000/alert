@@ -26,7 +26,7 @@ func Parseuri(v string) (Metrics, error) {
 		if ressplit[1] == "counter/" {
 			valueint64, err := strconv.ParseInt(ressplit[4], 10, 64)
 			if err != nil {
-
+				return Metrics{}, err
 			}
 			if valueint64 < 0 {
 				panic(errors.New("gauge cannot decrease in value"))
