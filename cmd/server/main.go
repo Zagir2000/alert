@@ -26,8 +26,6 @@ func CollectMetricsAndALerts(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	res.WriteHeader(http.StatusOK)
-	return
-
 }
 
 func main() {
