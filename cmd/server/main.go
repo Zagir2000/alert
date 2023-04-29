@@ -3,12 +3,12 @@ package main
 import (
 	"net/http"
 
-	"github.com/Zagir2000/alert/cmd/server/parser"
-	"github.com/Zagir2000/alert/cmd/server/storage"
+	"github.com/Zagir2000/alert/internal/parser"
+	"github.com/Zagir2000/alert/internal/storage"
 )
 
 func CollectMetricsAndALerts(res http.ResponseWriter, req *http.Request) {
-	var storage storage.MemStorageUsage = &storage.MemStorage{}
+	var storage storage.Repository = &storage.MemStorage{}
 	if req.Method != http.MethodPost {
 		res.WriteHeader(http.StatusMethodNotAllowed)
 
