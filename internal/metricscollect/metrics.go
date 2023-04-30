@@ -69,18 +69,18 @@ func (m *RuntimeMetrics) AddValueMetric() {
 	time.Sleep(m.pollInterval * time.Second)
 }
 
-func (m *RuntimeMetrics) UrlMetrics(hostpath string) []string {
+func (m *RuntimeMetrics) URLMetrics(hostpath string) []string {
 	var urls []string
 	for i, k := range m.RuntimeMemstats {
 		s := fmt.Sprintf("%f", k)
-		Url := hostpath + gaugeMetric + "/" + i + "/" + s
-		urls = append(urls, Url)
+		URL := hostpath + gaugeMetric + "/" + i + "/" + s
+		urls = append(urls, URL)
 	}
 	s := fmt.Sprintf("%f", m.RandomValue)
-	UrlRandomGuage := hostpath + gaugeMetric + "/" + RandomValueName + "/" + s
+	URLRandomGuage := hostpath + gaugeMetric + "/" + RandomValueName + "/" + s
 	c := fmt.Sprintf("%d", m.PollCount)
-	UrlCount := hostpath + counterMetric + "/" + PollCountName + "/" + c
-	urls = append(urls, UrlRandomGuage, UrlCount)
+	URLCount := hostpath + counterMetric + "/" + PollCountName + "/" + c
+	urls = append(urls, URLRandomGuage, URLCount)
 	return urls
 }
 

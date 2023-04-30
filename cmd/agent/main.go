@@ -16,7 +16,7 @@ const (
 
 func sendMetrics(m *metricscollect.RuntimeMetrics) error {
 	time.Sleep(reportInterval * time.Second)
-	metrics := m.UrlMetrics(hostpath)
+	metrics := m.URLMetrics(hostpath)
 	for _, url := range metrics {
 		req, err := http.Post(url, "text/plain", bytes.NewBuffer([]byte{}))
 		if err != nil {
