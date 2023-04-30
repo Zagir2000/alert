@@ -79,7 +79,7 @@ func (m *RuntimeMetrics) UrlMetrics(hostpath string) []string {
 	s := fmt.Sprintf("%f", m.RandomValue)
 	UrlRandomGuage := hostpath + gaugeMetric + "/" + RandomValueName + "/" + s
 	c := fmt.Sprintf("%d", m.PollCount)
-	UrlCount := hostpath + gaugeMetric + "/" + PollCountName + "/" + c
+	UrlCount := hostpath + counterMetric + "/" + PollCountName + "/" + c
 	urls = append(urls, UrlRandomGuage, UrlCount)
 	return urls
 }

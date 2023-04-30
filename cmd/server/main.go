@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/Zagir2000/alert/internal/parser"
@@ -34,6 +35,6 @@ func main() {
 
 	err := http.ListenAndServe(`:8080`, mux)
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 }

@@ -14,22 +14,26 @@ const (
 	reportInterval = 10
 )
 
-func sendMetrics(m *metricscollect.RuntimeMetrics) {
+func sendMetrics(m *metricscollect.RuntimeMetrics) error {
 	time.Sleep(reportInterval * time.Second)
 	metrics := m.UrlMetrics(hostpath)
 	for _, url := range metrics {
 		req, err := http.Post(url, "text/plain", bytes.NewBuffer([]byte{}))
 		if err != nil {
-			log.Fatalln(err)
+			return err
 		}
 		defer req.Body.Close()
 	}
+	return nil
 }
 func main() {
 	Metric := metricscollect.PollIntervalPin()
 	Metric.AddValueMetric()
 	go Metric.NewСollect()
 	for {
-		sendMetrics(&Metric)
+		err := sendMetrics(&Metric)
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
 }
