@@ -1,12 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"log"
-	"net/http"
 	"time"
 
 	"github.com/Zagir2000/alert/internal/metricscollect"
+	"github.com/go-resty/resty/v2"
 )
 
 const (
@@ -18,11 +17,11 @@ func sendMetrics(m *metricscollect.RuntimeMetrics) error {
 	time.Sleep(reportInterval * time.Second)
 	metrics := m.URLMetrics(hostpath)
 	for _, url := range metrics {
-		req, err := http.Post(url, "text/plain", bytes.NewBuffer([]byte{}))
-		if err != nil {
-			return err
-		}
-		defer req.Body.Close()
+		client := resty.New()
+		_, err := client.R().
+			SetHeader("Content-Type", "text/plain").
+			Post(url)
+		return err
 	}
 	return nil
 }
