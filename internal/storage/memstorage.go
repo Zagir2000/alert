@@ -1,11 +1,12 @@
 package storage
 
-import (
-	"github.com/Zagir2000/alert/internal/parser"
-)
-
 type Repository interface {
-	CollectMetricsAndALerts(res string) error
+	SetGauge(name string, value float64)
+	SetCounter(name string, value int64)
+	GetGauge(name string) (float64, bool)
+	GetCounter(name string) (int64, bool)
+	GetAllGauges() map[string]float64
+	GetAllCounters() map[string]int64
 }
 
 type MemStorage struct {
@@ -13,16 +14,35 @@ type MemStorage struct {
 	Counterdata map[string]int64
 }
 
-func (c *MemStorage) CollectMetricsAndALerts(res string) error {
+func NewMemStorage() *MemStorage {
+	return &MemStorage{
+		Gaugedata:   make(map[string]float64),
+		Counterdata: make(map[string]int64),
+	}
+}
 
-	Metric, err := parser.Parseuri(res)
-	if err != nil {
-		return err
-	}
-	if Metric.Type == "counter" {
-		c.Counterdata[Metric.Nametype] = Metric.Valuecounter
-	} else {
-		c.Gaugedata[Metric.Nametype] = Metric.Valuegauge
-	}
-	return nil
+func (m *MemStorage) SetGauge(name string, value float64) {
+	m.Gaugedata[name] = value
+}
+
+func (m *MemStorage) SetCounter(name string, value int64) {
+	m.Counterdata[name] = value
+}
+
+func (m *MemStorage) GetGauge(name string) (float64, bool) {
+	value, ok := m.Gaugedata[name]
+	return value, ok
+}
+
+func (m *MemStorage) GetCounter(name string) (int64, bool) {
+	value, ok := m.Counterdata[name]
+	return value, ok
+}
+
+func (m *MemStorage) GetAllGauges() map[string]float64 {
+	return m.Gaugedata
+}
+
+func (m *MemStorage) GetAllCounters() map[string]int64 {
+	return m.Counterdata
 }

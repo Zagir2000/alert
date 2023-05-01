@@ -4,36 +4,21 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Zagir2000/alert/internal/parser"
+	"github.com/Zagir2000/alert/internal/server/handlers"
 	"github.com/Zagir2000/alert/internal/storage"
+	"github.com/go-chi/chi/v5"
 )
 
-func CollectMetricsAndALerts(res http.ResponseWriter, req *http.Request) {
-	var storage storage.Repository = &storage.MemStorage{Gaugedata: make(map[string]float64), Counterdata: make(map[string]int64)}
-	if req.Method != http.MethodPost {
-		res.WriteHeader(http.StatusMethodNotAllowed)
-
-	}
-	err := storage.CollectMetricsAndALerts(req.RequestURI)
-	if err != nil {
-		switch err {
-		case parser.ErrType:
-			res.WriteHeader(http.StatusBadRequest)
-		case parser.ErrValue:
-			res.WriteHeader(http.StatusBadRequest)
-		case parser.ErrNameMetric:
-			res.WriteHeader(http.StatusNotFound)
-		}
-		return
-	}
-	res.WriteHeader(http.StatusOK)
-}
-
 func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc(`/`, CollectMetricsAndALerts)
+	m := storage.NewMemStorage()
+	NewHandStruct := handlers.MetricHandler{m}
 
-	err := http.ListenAndServe(`:8080`, mux)
+	r := chi.NewRouter()
+	// r.Get("/value/*", handlers.GetMetric)
+	// r.Get("/", handlers.ShowMetrics)
+	r.Post("/update/{metricType}/{metricName}/{value}", NewHandStruct.CollectMetricsAndALerts)
+
+	err := http.ListenAndServe(`:8080`, r)
 	if err != nil {
 		log.Fatalln(err)
 	}
