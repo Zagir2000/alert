@@ -17,7 +17,8 @@ func main() {
 	// r.Get("/value/*", handlers.GetMetric)
 	// r.Get("/", handlers.ShowMetrics)
 	r.Post("/update/{metricType}/{metricName}/{value}", NewHandStruct.CollectMetricsAndALerts)
-
+	r.Get("/", NewHandStruct.MainPage)
+	r.Get("/value/{metricType}/{metricName}", NewHandStruct.NowValueMetrics)
 	err := http.ListenAndServe(`:8080`, r)
 	if err != nil {
 		log.Fatalln(err)

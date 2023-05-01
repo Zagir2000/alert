@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -16,12 +17,56 @@ func MetricHandlerNew(s storage.Repository) *MetricHandler {
 	return &MetricHandler{Storage: s}
 }
 
-func (m *MetricHandler) UpdatePage(w http.ResponseWriter, r *http.Request) {
+func (m *MetricHandler) MainPage(res http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		res.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	res.Header().Add("Content-Type", "text/html")
+	res.WriteHeader(http.StatusOK)
+	res.Write([]byte("<h1>Gauge metrics</h1>"))
 
+	for k, v := range m.Storage.GetAllGauges() {
+		res.Write([]byte(fmt.Sprintf("%s: %d", k, v)))
+	}
+	res.Write([]byte("<h1>Counter metrics</h1>"))
+	for k, v := range m.Storage.GetAllCounters() {
+		res.Write([]byte(fmt.Sprintf("%s: %d", k, v)))
+	}
+	res.WriteHeader(http.StatusOK)
 }
+
+func (m *MetricHandler) NowValueMetrics(res http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		res.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	metricType := chi.URLParam(req, "metricType")
+	metricName := chi.URLParam(req, "metricName")
+	switch metricType {
+	case "counter":
+		value, ok := m.Storage.GetCounter(metricName)
+		if !ok {
+			res.WriteHeader(http.StatusNotFound)
+		}
+		res.Write([]byte(fmt.Sprintf("%s", value)))
+	case "gauge":
+		value, ok := m.Storage.GetGauge(metricName)
+		if !ok {
+			res.WriteHeader(http.StatusNotFound)
+		}
+		res.Write([]byte(fmt.Sprintf("%s", value)))
+	default:
+		{
+			res.WriteHeader(http.StatusBadRequest)
+		}
+	}
+	res.WriteHeader(http.StatusOK)
+}
+
 func (m *MetricHandler) CollectMetricsAndALerts(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
-		http.Error(res, "Method not allowed", http.StatusMethodNotAllowed)
+		res.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 	metricType := chi.URLParam(req, "metricType")
