@@ -27,7 +27,7 @@ func (m *MetricHandler) MainPage(res http.ResponseWriter, req *http.Request) {
 	res.Write([]byte("<h1>Gauge metrics</h1>"))
 
 	for k, v := range m.Storage.GetAllGauges() {
-		res.Write([]byte(fmt.Sprintf("%s: %d", k, v)))
+		res.Write([]byte(fmt.Sprintf("%s: %f", k, v)))
 	}
 	res.Write([]byte("<h1>Counter metrics</h1>"))
 	for k, v := range m.Storage.GetAllCounters() {
@@ -55,7 +55,7 @@ func (m *MetricHandler) NowValueMetrics(res http.ResponseWriter, req *http.Reque
 		if !ok {
 			res.WriteHeader(http.StatusNotFound)
 		}
-		res.Write([]byte(fmt.Sprintf("%d", value)))
+		res.Write([]byte(fmt.Sprintf("%f", value)))
 	default:
 		{
 			res.WriteHeader(http.StatusBadRequest)

@@ -8,7 +8,7 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-type MyApiError struct {
+type MyAPIError struct {
 	Code      int       `json:"code"`
 	Message   string    `json:"message"`
 	Timestamp time.Time `json:"timestamp"`
@@ -23,7 +23,7 @@ func sendMetrics(m *metricscollect.RuntimeMetrics) error {
 	time.Sleep(reportInterval * time.Second)
 	metrics := m.URLMetrics(hostpath)
 	client := resty.New()
-	var responseErr MyApiError
+	var responseErr MyAPIError
 	for _, url := range metrics {
 		_, err := client.R().
 			SetError(&responseErr).

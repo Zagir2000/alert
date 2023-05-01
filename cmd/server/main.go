@@ -11,7 +11,7 @@ import (
 
 func main() {
 	m := storage.NewMemStorage()
-	NewHandStruct := handlers.MetricHandler{m}
+	NewHandStruct := handlers.MetricHandlerNew(m)
 
 	r := chi.NewRouter()
 	// r.Get("/value/*", handlers.GetMetric)
