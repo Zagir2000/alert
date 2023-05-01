@@ -49,13 +49,13 @@ func (m *MetricHandler) NowValueMetrics(res http.ResponseWriter, req *http.Reque
 		if !ok {
 			res.WriteHeader(http.StatusNotFound)
 		}
-		res.Write([]byte(fmt.Sprintf("%s", value)))
+		res.Write([]byte(fmt.Sprintf("%d", value)))
 	case "gauge":
 		value, ok := m.Storage.GetGauge(metricName)
 		if !ok {
 			res.WriteHeader(http.StatusNotFound)
 		}
-		res.Write([]byte(fmt.Sprintf("%s", value)))
+		res.Write([]byte(fmt.Sprintf("%d", value)))
 	default:
 		{
 			res.WriteHeader(http.StatusBadRequest)
