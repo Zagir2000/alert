@@ -8,6 +8,12 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
+type MyApiError struct {
+	Code      int       `json:"code"`
+	Message   string    `json:"message"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
 const (
 	hostpath       = "http://localhost:8080/update/"
 	reportInterval = 10
@@ -16,9 +22,11 @@ const (
 func sendMetrics(m *metricscollect.RuntimeMetrics) error {
 	time.Sleep(reportInterval * time.Second)
 	metrics := m.URLMetrics(hostpath)
+	client := resty.New()
+	var responseErr MyApiError
 	for _, url := range metrics {
-		client := resty.New()
 		_, err := client.R().
+			SetError(&responseErr).
 			SetHeader("Content-Type", "text/plain").
 			Post(url)
 		return err
