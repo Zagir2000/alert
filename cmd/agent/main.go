@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/Zagir2000/alert/internal/metricscollect"
@@ -35,10 +36,18 @@ func parseFlags() {
 		flagRunAddr = envRunAddr
 	}
 	if envReportInterval := os.Getenv("REPORT_INTERVAL"); envReportInterval != "" {
-		flagRunAddr = envReportInterval
+		envReportIntervalInt, err := strconv.Atoi(envReportInterval)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		reportInterval = envReportIntervalInt
 	}
 	if envPollInterval := os.Getenv("POLL_INTERVAL"); envPollInterval != "" {
-		flagRunAddr = envPollInterval
+		envPollIntervalInt, err := strconv.Atoi(envPollInterval)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		pollInterval = envPollIntervalInt
 	}
 }
 
