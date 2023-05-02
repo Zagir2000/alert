@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -73,13 +74,16 @@ func (m *RuntimeMetrics) URLMetrics(hostpath string) []string {
 	var urls []string
 	for i, k := range m.RuntimeMemstats {
 		s := fmt.Sprintf("%f", k)
-		URL := hostpath + "/update/" + gaugeMetric + "/" + i + "/" + s
+
+		URL := strings.Join([]string{hostpath, "update", gaugeMetric, i, s}, "/")
 		urls = append(urls, URL)
 	}
 	s := fmt.Sprintf("%f", m.RandomValue)
-	URLRandomGuage := hostpath + "/update/" + gaugeMetric + "/" + RandomValueName + "/" + s
+
+	URLRandomGuage := strings.Join([]string{hostpath, "update", gaugeMetric, RandomValueName, s}, "/")
 	c := fmt.Sprintf("%d", m.PollCount)
-	URLCount := hostpath + "/update/" + counterMetric + "/" + PollCountName + "/" + c
+
+	URLCount := strings.Join([]string{hostpath, "update", counterMetric, PollCountName, c}, "/")
 	urls = append(urls, URLRandomGuage, URLCount)
 	return urls
 }

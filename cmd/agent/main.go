@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/Zagir2000/alert/internal/metricscollect"
@@ -16,7 +17,7 @@ type MyAPIError struct {
 }
 
 const (
-	hostpath = "http://localhost:8080"
+	address = "http://localhost"
 )
 
 var flagRunAddr string
@@ -32,13 +33,14 @@ func parseFlags() {
 	flag.IntVar(&reportInterval, "r", 10, "frequency of sending metrics to the server")
 
 	//частота опроса метрик из пакета
-	flag.IntVar(&reportInterval, "p", 2, "frequency of polling metrics from the package")
+	flag.IntVar(&pollInterval, "p", 2, "frequency of polling metrics from the package")
 	flag.Parse()
 }
 
 func sendMetrics(m *metricscollect.RuntimeMetrics) error {
+
 	time.Sleep(time.Duration(reportInterval) * time.Millisecond)
-	metrics := m.URLMetrics(hostpath)
+	metrics := m.URLMetrics(strings.Join([]string{address, flagRunAddr}, ""))
 	client := resty.New()
 	var responseErr MyAPIError
 	for _, url := range metrics {
@@ -51,6 +53,7 @@ func sendMetrics(m *metricscollect.RuntimeMetrics) error {
 	return nil
 }
 func main() {
+	parseFlags()
 	Metric := metricscollect.PollIntervalPin(pollInterval)
 	Metric.AddValueMetric()
 	go Metric.NewСollect()
