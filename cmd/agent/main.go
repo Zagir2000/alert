@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"time"
 
@@ -15,12 +16,28 @@ type MyAPIError struct {
 }
 
 const (
-	hostpath       = "http://localhost:8080/update/"
-	reportInterval = 10
+	hostpath = "http://localhost:8080"
 )
 
+var flagRunAddr string
+var reportInterval int
+var pollInterval int
+
+func parseFlags() {
+	// как аргумент -a со значением :8080 по умолчанию
+	// парсим переданные серверу аргументы в зарегистрированные переменные
+	flag.StringVar(&flagRunAddr, "a", ":8080", "address and port to run server")
+
+	// частота отправки метрик на сервер
+	flag.IntVar(&reportInterval, "r", 10, "frequency of sending metrics to the server")
+
+	//частота опроса метрик из пакета
+	flag.IntVar(&reportInterval, "p", 2, "frequency of polling metrics from the package")
+	flag.Parse()
+}
+
 func sendMetrics(m *metricscollect.RuntimeMetrics) error {
-	time.Sleep(reportInterval * time.Second)
+	time.Sleep(time.Duration(reportInterval) * time.Millisecond)
 	metrics := m.URLMetrics(hostpath)
 	client := resty.New()
 	var responseErr MyAPIError
@@ -34,7 +51,7 @@ func sendMetrics(m *metricscollect.RuntimeMetrics) error {
 	return nil
 }
 func main() {
-	Metric := metricscollect.PollIntervalPin()
+	Metric := metricscollect.PollIntervalPin(pollInterval)
 	Metric.AddValueMetric()
 	go Metric.NewСollect()
 	for {

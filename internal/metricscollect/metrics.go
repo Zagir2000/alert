@@ -53,8 +53,8 @@ var gaugeMetrics = []string{
 	"Sys",
 	"TotalAlloc"}
 
-func PollIntervalPin() RuntimeMetrics {
-	return RuntimeMetrics{pollInterval: 2}
+func PollIntervalPin(pollIntervalFlag int) RuntimeMetrics {
+	return RuntimeMetrics{pollInterval: time.Duration(pollIntervalFlag)}
 }
 func (m *RuntimeMetrics) AddValueMetric() {
 	mapstats := make(map[string]float64)
@@ -73,13 +73,13 @@ func (m *RuntimeMetrics) URLMetrics(hostpath string) []string {
 	var urls []string
 	for i, k := range m.RuntimeMemstats {
 		s := fmt.Sprintf("%f", k)
-		URL := hostpath + gaugeMetric + "/" + i + "/" + s
+		URL := hostpath + "/update/" + gaugeMetric + "/" + i + "/" + s
 		urls = append(urls, URL)
 	}
 	s := fmt.Sprintf("%f", m.RandomValue)
-	URLRandomGuage := hostpath + gaugeMetric + "/" + RandomValueName + "/" + s
+	URLRandomGuage := hostpath + "/update/" + gaugeMetric + "/" + RandomValueName + "/" + s
 	c := fmt.Sprintf("%d", m.PollCount)
-	URLCount := hostpath + counterMetric + "/" + PollCountName + "/" + c
+	URLCount := hostpath + "/update/" + counterMetric + "/" + PollCountName + "/" + c
 	urls = append(urls, URLRandomGuage, URLCount)
 	return urls
 }
