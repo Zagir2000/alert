@@ -75,15 +75,15 @@ func (m *RuntimeMetrics) URLMetrics(hostpath string) []string {
 	for i, k := range m.RuntimeMemstats {
 		s := fmt.Sprintf("%f", k)
 
-		URL := strings.Join([]string{hostpath, "update", gaugeMetric, i, s}, "/")
+		URL := strings.Join([]string{"http:/", hostpath, "update", gaugeMetric, i, s}, "/")
 		urls = append(urls, URL)
 	}
 	s := fmt.Sprintf("%f", m.RandomValue)
 
-	URLRandomGuage := strings.Join([]string{hostpath, "update", gaugeMetric, RandomValueName, s}, "/")
+	URLRandomGuage := strings.Join([]string{"http:/", hostpath, "update", gaugeMetric, RandomValueName, s}, "/")
 	c := fmt.Sprintf("%d", m.PollCount)
 
-	URLCount := strings.Join([]string{hostpath, "update", counterMetric, PollCountName, c}, "/")
+	URLCount := strings.Join([]string{"http:/", hostpath, "update", counterMetric, PollCountName, c}, "/")
 	urls = append(urls, URLRandomGuage, URLCount)
 	return urls
 }

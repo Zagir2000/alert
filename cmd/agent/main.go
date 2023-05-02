@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/Zagir2000/alert/internal/metricscollect"
@@ -16,10 +15,6 @@ type MyAPIError struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-const (
-	address = "http://localhost"
-)
-
 var flagRunAddr string
 var reportInterval int
 var pollInterval int
@@ -27,7 +22,7 @@ var pollInterval int
 func parseFlags() {
 	// как аргумент -a со значением :8080 по умолчанию
 	// парсим переданные серверу аргументы в зарегистрированные переменные
-	flag.StringVar(&flagRunAddr, "a", ":8080", "address and port to run server")
+	flag.StringVar(&flagRunAddr, "a", "localhost:8080", "address and port to run server")
 
 	// частота отправки метрик на сервер
 	flag.IntVar(&reportInterval, "r", 10, "frequency of sending metrics to the server")
@@ -40,7 +35,7 @@ func parseFlags() {
 func sendMetrics(m *metricscollect.RuntimeMetrics) error {
 
 	time.Sleep(time.Duration(reportInterval) * time.Millisecond)
-	metrics := m.URLMetrics(strings.Join([]string{address, flagRunAddr}, ""))
+	metrics := m.URLMetrics(flagRunAddr)
 	client := resty.New()
 	var responseErr MyAPIError
 	for _, url := range metrics {
