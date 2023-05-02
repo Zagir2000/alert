@@ -34,10 +34,10 @@ func parseFlags() {
 	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
 		flagRunAddr = envRunAddr
 	}
-	if envReportInterval := os.Getenv("ADDRESS"); envReportInterval != "" {
+	if envReportInterval := os.Getenv("REPORT_INTERVAL"); envReportInterval != "" {
 		flagRunAddr = envReportInterval
 	}
-	if envPollInterval := os.Getenv("ADDRESS"); envPollInterval != "" {
+	if envPollInterval := os.Getenv("POLL_INTERVAL"); envPollInterval != "" {
 		flagRunAddr = envPollInterval
 	}
 }
