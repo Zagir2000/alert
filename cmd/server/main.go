@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/Zagir2000/alert/internal/server/handlers"
 	"github.com/Zagir2000/alert/internal/storage"
@@ -21,6 +22,9 @@ func parseFlags() {
 	flag.StringVar(&flagRunAddr, "a", ":8080", "address and port to run server")
 	// парсим переданные серверу аргументы в зарегистрированные переменные
 	flag.Parse()
+	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
+		flagRunAddr = envRunAddr
+	}
 }
 
 func run(r *chi.Mux) error {

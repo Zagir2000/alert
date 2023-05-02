@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"os"
 	"time"
 
 	"github.com/Zagir2000/alert/internal/metricscollect"
@@ -30,6 +31,15 @@ func parseFlags() {
 	//частота опроса метрик из пакета
 	flag.IntVar(&pollInterval, "p", 2, "frequency of polling metrics from the package")
 	flag.Parse()
+	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
+		flagRunAddr = envRunAddr
+	}
+	if envReportInterval := os.Getenv("ADDRESS"); envReportInterval != "" {
+		flagRunAddr = envReportInterval
+	}
+	if envPollInterval := os.Getenv("ADDRESS"); envPollInterval != "" {
+		flagRunAddr = envPollInterval
+	}
 }
 
 func sendMetrics(m *metricscollect.RuntimeMetrics) error {
