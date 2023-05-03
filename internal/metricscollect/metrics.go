@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/go-resty/resty/v2"
 )
 
 type gauge float64
@@ -23,6 +25,12 @@ type RuntimeMetrics struct {
 	PollCount       counter
 	RandomValue     gauge
 	pollInterval    time.Duration
+}
+
+type MyAPIError struct {
+	Code      int       `json:"code"`
+	Message   string    `json:"message"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 var gaugeMetrics = []string{
@@ -86,6 +94,22 @@ func (m *RuntimeMetrics) URLMetrics(hostpath string) []string {
 	URLCount := strings.Join([]string{"http:/", hostpath, "update", counterMetric, PollCountName, c}, "/")
 	urls = append(urls, URLRandomGuage, URLCount)
 	return urls
+}
+
+func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
+
+	time.Sleep(m.pollInterval * time.Second)
+	metrics := m.URLMetrics(hostpath)
+	client := resty.New()
+	var responseErr MyAPIError
+	for _, url := range metrics {
+		_, err := client.R().
+			SetError(&responseErr).
+			SetHeader("Content-Type", "text/plain").
+			Post(url)
+		return err
+	}
+	return nil
 }
 
 func (m *RuntimeMetrics) NewСollect() {
