@@ -22,16 +22,17 @@ func (m *MetricHandler) MainPage(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	res.Header().Add("Content-Type", "text/html")
+	res.Header().Add("Content-Type", "text/plain")
 	res.WriteHeader(http.StatusOK)
 	res.Write([]byte("<h1>Gauge metrics</h1>"))
-
-	for k, v := range m.Storage.GetAllGauges() {
-		res.Write([]byte(fmt.Sprintf("%s: %g", k, v)))
+	AllGaugeValues := m.Storage.GetAllGaugeValues()
+	for k, v := range AllGaugeValues {
+		res.Write([]byte(fmt.Sprintf("%s: %g\n", k, v)))
 	}
 	res.Write([]byte("<h1>Counter metrics</h1>"))
-	for k, v := range m.Storage.GetAllCounters() {
-		res.Write([]byte(fmt.Sprintf("%s: %d", k, v)))
+	AllCounterValues := m.Storage.GetAllCounterValues()
+	for k, v := range AllCounterValues {
+		res.Write([]byte(fmt.Sprintf("%s: %d\n", k, v)))
 	}
 	res.WriteHeader(http.StatusOK)
 }
@@ -64,7 +65,7 @@ func (m *MetricHandler) NowValueMetrics(res http.ResponseWriter, req *http.Reque
 	res.WriteHeader(http.StatusOK)
 }
 
-func (m *MetricHandler) CollectMetricsAndALerts(res http.ResponseWriter, req *http.Request) {
+func (m *MetricHandler) Update(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		res.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -79,13 +80,13 @@ func (m *MetricHandler) CollectMetricsAndALerts(res http.ResponseWriter, req *ht
 		if err != nil {
 			res.WriteHeader(http.StatusBadRequest)
 		}
-		m.Storage.SetCounter(metricName, valueint64)
+		m.Storage.AddCounterValue(metricName, valueint64)
 	case "gauge":
 		valuefloat64, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			res.WriteHeader(http.StatusBadRequest)
 		}
-		m.Storage.SetGauge(metricName, valuefloat64)
+		m.Storage.AddGaugeValue(metricName, valuefloat64)
 	default:
 		{
 			res.WriteHeader(http.StatusBadRequest)
