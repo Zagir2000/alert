@@ -28,7 +28,7 @@ func (m *MetricHandler) AllMetrics(res http.ResponseWriter, req *http.Request) {
 	res.Write([]byte("<h1>Gauge metrics</h1>"))
 	AllGaugeValues := m.Storage.GetAllGaugeValues()
 	OrderAllGaugeValues := make([]string, 0, len(AllGaugeValues))
-	for k, _ := range AllGaugeValues {
+	for k := range AllGaugeValues {
 		OrderAllGaugeValues = append(OrderAllGaugeValues, k)
 	}
 	// sort the slice by keys

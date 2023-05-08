@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log"
 	"os"
 	"strconv"
 )
@@ -27,14 +27,14 @@ func parseFlags() (string, int, int) {
 	if envReportInterval, ok := os.LookupEnv("REPORT_INTERVAL"); ok {
 		envReportIntervalInt, err := strconv.Atoi(envReportInterval)
 		if err != nil {
-			fmt.Errorf("wrong REPORT_INTERVAL format: is not a integer", err)
+			log.Fatalln("wrong REPORT_INTERVAL format: is not a integer", err)
 		}
 		reportInterval = envReportIntervalInt
 	}
 	if envPollInterval, ok := os.LookupEnv("POLL_INTERVAL"); ok {
 		envPollIntervalInt, err := strconv.Atoi(envPollInterval)
 		if err != nil {
-			fmt.Errorf("wrong POLL_INTERVAL format: is not a integer", err)
+			log.Fatalln("wrong POLL_INTERVAL format: is not a integer", err)
 		}
 		pollInterval = envPollIntervalInt
 	}
