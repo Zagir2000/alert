@@ -9,8 +9,8 @@ import (
 func TestRuntimeMetrics_URLMetrics(t *testing.T) {
 	type fields struct {
 		RuntimeMemstats map[string]float64
-		PollCount       counter
-		RandomValue     gauge
+		PollCount       int64
+		RandomValue     float64
 		pollInterval    time.Duration
 	}
 	type args struct {

@@ -2,19 +2,18 @@ package main
 
 import (
 	"flag"
-	"log"
+	"fmt"
 	"os"
 	"strconv"
 )
 
-var flagRunAddr string
-var reportInterval int
-var pollInterval int
-
-func parseFlags() {
+func parseFlags() (string, int, int) {
+	var runAddr string
+	var reportInterval int
+	var pollInterval int
 	// как аргумент -a со значением :8080 по умолчанию
 	// парсим переданные серверу аргументы в зарегистрированные переменные
-	flag.StringVar(&flagRunAddr, "a", "localhost:8080", "address and port to run server")
+	flag.StringVar(&runAddr, "a", "localhost:8080", "address and port to run server")
 
 	// частота отправки метрик на сервер
 	flag.IntVar(&reportInterval, "r", 10, "frequency of sending metrics to the server")
@@ -22,21 +21,22 @@ func parseFlags() {
 	//частота опроса метрик из пакета
 	flag.IntVar(&pollInterval, "p", 2, "frequency of polling metrics from the package")
 	flag.Parse()
-	if envRunAddr := os.Getenv("ADDRESS"); envRunAddr != "" {
-		flagRunAddr = envRunAddr
+	if envRunAddr, ok := os.LookupEnv("ADDRESS"); ok {
+		runAddr = envRunAddr
 	}
-	if envReportInterval := os.Getenv("REPORT_INTERVAL"); envReportInterval != "" {
+	if envReportInterval, ok := os.LookupEnv("REPORT_INTERVAL"); ok {
 		envReportIntervalInt, err := strconv.Atoi(envReportInterval)
 		if err != nil {
-			log.Fatalln(err)
+			fmt.Errorf("wrong REPORT_INTERVAL format: is not a integer", err)
 		}
 		reportInterval = envReportIntervalInt
 	}
-	if envPollInterval := os.Getenv("POLL_INTERVAL"); envPollInterval != "" {
+	if envPollInterval, ok := os.LookupEnv("POLL_INTERVAL"); ok {
 		envPollIntervalInt, err := strconv.Atoi(envPollInterval)
 		if err != nil {
-			log.Fatalln(err)
+			fmt.Errorf("wrong POLL_INTERVAL format: is not a integer", err)
 		}
 		pollInterval = envPollIntervalInt
 	}
+	return runAddr, pollInterval, reportInterval
 }

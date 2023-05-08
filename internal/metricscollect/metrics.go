@@ -10,9 +10,6 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-type gauge float64
-type counter int64
-
 const (
 	counterMetric   string = "counter"
 	gaugeMetric     string = "gauge"
@@ -22,12 +19,13 @@ const (
 
 type RuntimeMetrics struct {
 	RuntimeMemstats map[string]float64
-	PollCount       counter
-	RandomValue     gauge
+	PollCount       int64
+	RandomValue     float64
 	pollInterval    time.Duration
+	reportInterval  time.Duration
 }
 
-type MyAPIError struct {
+type SendMetricsError struct {
 	Code      int       `json:"code"`
 	Message   string    `json:"message"`
 	Timestamp time.Time `json:"timestamp"`
@@ -62,8 +60,8 @@ var gaugeMetrics = []string{
 	"Sys",
 	"TotalAlloc"}
 
-func PollIntervalPin(pollIntervalFlag int) RuntimeMetrics {
-	return RuntimeMetrics{pollInterval: time.Duration(pollIntervalFlag)}
+func IntervalPin(pollIntervalFlag int, reportIntervalFlag int) RuntimeMetrics {
+	return RuntimeMetrics{pollInterval: time.Duration(pollIntervalFlag), reportInterval: time.Duration(reportIntervalFlag)}
 }
 func (m *RuntimeMetrics) AddValueMetric() {
 	mapstats := make(map[string]float64)
@@ -72,17 +70,16 @@ func (m *RuntimeMetrics) AddValueMetric() {
 	for _, k := range gaugeMetrics {
 		mapstats[k] = float64(RtMetrics.Alloc)
 	}
-	m.RandomValue = gauge(rand.Float64())
+	m.RandomValue = rand.Float64()
 	m.PollCount += 1
 	m.RuntimeMemstats = mapstats
 	time.Sleep(m.pollInterval * time.Second)
 }
 
 func (m *RuntimeMetrics) URLMetrics(hostpath string) []string {
-	var urls []string
+	urls := make([]string, 0, len(m.RuntimeMemstats)+2)
 	for i, k := range m.RuntimeMemstats {
 		s := fmt.Sprintf("%f", k)
-
 		URL := strings.Join([]string{"http:/", hostpath, "update", gaugeMetric, i, s}, "/")
 		urls = append(urls, URL)
 	}
@@ -98,16 +95,19 @@ func (m *RuntimeMetrics) URLMetrics(hostpath string) []string {
 
 func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
 
-	time.Sleep(m.pollInterval * time.Second)
+	time.Sleep(m.reportInterval * time.Second)
 	metrics := m.URLMetrics(hostpath)
 	client := resty.New()
-	var responseErr MyAPIError
+	var responseErr SendMetricsError
 	for _, url := range metrics {
 		_, err := client.R().
 			SetError(&responseErr).
 			SetHeader("Content-Type", "text/plain").
 			Post(url)
-		return err
+
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -115,5 +115,6 @@ func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
 func (m *RuntimeMetrics) NewСollect() {
 	for {
 		m.AddValueMetric()
+
 	}
 }

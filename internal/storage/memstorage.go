@@ -9,40 +9,40 @@ type Repository interface {
 	GetAllCounterValues() map[string]int64
 }
 
-type MemStorage struct {
+type memStorage struct {
 	Gaugedata   map[string]float64
 	Counterdata map[string]int64
 }
 
-func NewMemStorage() *MemStorage {
-	return &MemStorage{
+func NewMemStorage() *memStorage {
+	return &memStorage{
 		Gaugedata:   make(map[string]float64),
 		Counterdata: make(map[string]int64),
 	}
 }
 
-func (m *MemStorage) AddGaugeValue(name string, value float64) {
+func (m *memStorage) AddGaugeValue(name string, value float64) {
 	m.Gaugedata[name] = value
 }
 
-func (m *MemStorage) AddCounterValue(name string, value int64) {
+func (m *memStorage) AddCounterValue(name string, value int64) {
 	m.Counterdata[name] += value
 }
 
-func (m *MemStorage) GetGauge(name string) (float64, bool) {
+func (m *memStorage) GetGauge(name string) (float64, bool) {
 	value, ok := m.Gaugedata[name]
 	return value, ok
 }
 
-func (m *MemStorage) GetCounter(name string) (int64, bool) {
+func (m *memStorage) GetCounter(name string) (int64, bool) {
 	value, ok := m.Counterdata[name]
 	return value, ok
 }
 
-func (m *MemStorage) GetAllGaugeValues() map[string]float64 {
+func (m *memStorage) GetAllGaugeValues() map[string]float64 {
 	return m.Gaugedata
 }
 
-func (m *MemStorage) GetAllCounterValues() map[string]int64 {
+func (m *memStorage) GetAllCounterValues() map[string]int64 {
 	return m.Counterdata
 }

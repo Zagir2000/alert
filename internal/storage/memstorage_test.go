@@ -4,19 +4,19 @@ import (
 	"testing"
 )
 
-func TestSetGaugeStorage(t *testing.T) {
+func TestAddGaugeValueStorage(t *testing.T) {
 
 	tests := []struct {
 		name   string
 		metric string
 		value  float64
-		want   *MemStorage
+		want   *memStorage
 	}{
 		{
 			name:   "Positive test",
 			metric: "metricTest",
 			value:  1.21,
-			want: &MemStorage{
+			want: &memStorage{
 				Gaugedata:   map[string]float64{"metricTest": 1.21},
 				Counterdata: nil,
 			},
@@ -25,7 +25,7 @@ func TestSetGaugeStorage(t *testing.T) {
 			name:   "Failed test",
 			metric: "metricTest",
 			value:  78,
-			want: &MemStorage{
+			want: &memStorage{
 				Gaugedata:   map[string]float64{"metricTest": 1.21},
 				Counterdata: nil,
 			},
@@ -49,13 +49,13 @@ func TestSetCounterStorage(t *testing.T) {
 		name   string
 		metric string
 		value  int64
-		want   *MemStorage
+		want   *memStorage
 	}{
 		{
 			name:   "Positive test",
 			metric: "metricTest",
 			value:  200,
-			want: &MemStorage{
+			want: &memStorage{
 				Counterdata: map[string]int64{"metricTest": 200},
 				Gaugedata:   nil,
 			},
@@ -64,7 +64,7 @@ func TestSetCounterStorage(t *testing.T) {
 			name:   "Failed test",
 			metric: "metricTest",
 			value:  78,
-			want: &MemStorage{
+			want: &memStorage{
 				Gaugedata: nil,
 				Counterdata: map[string]int64{
 					"metricTest": 123,

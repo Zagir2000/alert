@@ -7,12 +7,12 @@ import (
 )
 
 func main() {
-	parseFlags()
-	Metric := metricscollect.PollIntervalPin(pollInterval)
-	Metric.AddValueMetric()
+	runAddr, pollInterval, reportInterval := parseFlags()
+	Metric := metricscollect.IntervalPin(pollInterval, reportInterval)
 	go Metric.NewСollect()
+
 	for {
-		err := Metric.SendMetrics(flagRunAddr)
+		err := Metric.SendMetrics(runAddr)
 		if err != nil {
 			log.Fatalln(err)
 		}

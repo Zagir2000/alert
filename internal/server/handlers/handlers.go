@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/Zagir2000/alert/internal/storage"
@@ -17,7 +18,7 @@ func MetricHandlerNew(s storage.Repository) *MetricHandler {
 	return &MetricHandler{Storage: s}
 }
 
-func (m *MetricHandler) MainPage(res http.ResponseWriter, req *http.Request) {
+func (m *MetricHandler) AllMetrics(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		res.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -26,8 +27,14 @@ func (m *MetricHandler) MainPage(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 	res.Write([]byte("<h1>Gauge metrics</h1>"))
 	AllGaugeValues := m.Storage.GetAllGaugeValues()
-	for k, v := range AllGaugeValues {
-		res.Write([]byte(fmt.Sprintf("%s: %g\n", k, v)))
+	OrderAllGaugeValues := make([]string, 0, len(AllGaugeValues))
+	for k, _ := range AllGaugeValues {
+		OrderAllGaugeValues = append(OrderAllGaugeValues, k)
+	}
+	// sort the slice by keys
+	sort.Strings(OrderAllGaugeValues)
+	for _, k := range OrderAllGaugeValues {
+		fmt.Fprintf(res, "%s: %g\n", k, AllGaugeValues[k])
 	}
 	res.Write([]byte("<h1>Counter metrics</h1>"))
 	AllCounterValues := m.Storage.GetAllCounterValues()
@@ -65,7 +72,7 @@ func (m *MetricHandler) NowValueMetrics(res http.ResponseWriter, req *http.Reque
 	res.WriteHeader(http.StatusOK)
 }
 
-func (m *MetricHandler) Update(res http.ResponseWriter, req *http.Request) {
+func (m *MetricHandler) NewMetrics(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		res.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -95,7 +102,3 @@ func (m *MetricHandler) Update(res http.ResponseWriter, req *http.Request) {
 	res.Header().Add("Content-Type", "text/plain; charset=utf-8")
 	res.WriteHeader(http.StatusOK)
 }
-
-// func MetricHandlerNew(s storage.Repository) *MetricHandler {
-// 	return &MetricHandler{Storage: s}
-// }
