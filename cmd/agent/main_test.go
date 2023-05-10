@@ -46,7 +46,6 @@ func TestRunSendMetrics(t *testing.T) {
 	flag.parseFlags()
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctx := context.Background()
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(1000*time.Millisecond))
 			defer cancel()
 			RunSendMetrics(test.args.Metric, ctx, cancel, u.Host)
