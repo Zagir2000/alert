@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 
@@ -85,6 +86,7 @@ func (m *RuntimeMetrics) URLMetrics(hostpath string) []string {
 		URL := strings.Join([]string{"http:/", hostpath, "update", gaugeMetric, i, s}, "/")
 		urls = append(urls, URL)
 	}
+	sort.Strings(urls)
 	s := fmt.Sprintf("%f", m.RandomValue)
 
 	URLRandomGuage := strings.Join([]string{"http:/", hostpath, "update", gaugeMetric, RandomValueName, s}, "/")
