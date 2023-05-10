@@ -1,8 +1,12 @@
 package storage
 
+import (
+	"errors"
+)
+
 type Repository interface {
 	AddGaugeValue(name string, value float64)
-	AddCounterValue(name string, value int64)
+	AddCounterValue(name string, value int64) error
 	GetGauge(name string) (float64, bool)
 	GetCounter(name string) (int64, bool)
 	GetAllGaugeValues() map[string]float64
@@ -25,8 +29,12 @@ func (m *memStorage) AddGaugeValue(name string, value float64) {
 	m.Gaugedata[name] = value
 }
 
-func (m *memStorage) AddCounterValue(name string, value int64) {
+func (m *memStorage) AddCounterValue(name string, value int64) error {
+	if value < 0 {
+		return errors.New("counter cannot decrease in value")
+	}
 	m.Counterdata[name] += value
+	return nil
 }
 
 func (m *memStorage) GetGauge(name string) (float64, bool) {

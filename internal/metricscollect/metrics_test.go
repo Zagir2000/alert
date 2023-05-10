@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestRuntimeMetrics_URLMetrics(t *testing.T) {
+func TestRuntimeMetricsURLMetrics(t *testing.T) {
 	type fields struct {
 		RuntimeMemstats map[string]float64
 		PollCount       int64

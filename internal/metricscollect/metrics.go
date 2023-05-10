@@ -1,7 +1,10 @@
 package metricscollect
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"log"
 	"math/rand"
 	"runtime"
 	"strings"
@@ -31,49 +34,48 @@ type SendMetricsError struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-var gaugeMetrics = []string{
-	"Alloc",
-	"BuckHashSys",
-	"Frees",
-	"GCCPUFraction",
-	"GCSys",
-	"HeapAlloc",
-	"HeapIdle",
-	"HeapInuse",
-	"HeapObjects",
-	"HeapReleased",
-	"HeapSys",
-	"LastGC",
-	"Lookups",
-	"MCacheInuse",
-	"MCacheSys",
-	"MSpanInuse",
-	"MSpanSys",
-	"Mallocs",
-	"NextGC",
-	"NumForcedGC",
-	"NumGC",
-	"OtherSys",
-	"PauseTotalNs",
-	"StackInuse",
-	"StackSys",
-	"Sys",
-	"TotalAlloc"}
-
 func IntervalPin(pollIntervalFlag int, reportIntervalFlag int) RuntimeMetrics {
 	return RuntimeMetrics{pollInterval: time.Duration(pollIntervalFlag), reportInterval: time.Duration(reportIntervalFlag)}
 }
-func (m *RuntimeMetrics) AddValueMetric() {
+func (m *RuntimeMetrics) AddValueMetric() error {
 	mapstats := make(map[string]float64)
 	var RtMetrics runtime.MemStats
 	runtime.ReadMemStats(&RtMetrics)
-	for _, k := range gaugeMetrics {
-		mapstats[k] = float64(RtMetrics.Alloc)
-	}
+	mapstats["Alloc"] = float64(RtMetrics.Alloc)
+	mapstats["BuckHashSys"] = float64(RtMetrics.BuckHashSys)
+	mapstats["Frees"] = float64(RtMetrics.Frees)
+	mapstats["GCCPUFraction"] = float64(RtMetrics.GCCPUFraction)
+	mapstats["GCSys"] = float64(RtMetrics.GCSys)
+	mapstats["HeapAlloc"] = float64(RtMetrics.HeapAlloc)
+	mapstats["HeapIdle"] = float64(RtMetrics.HeapIdle)
+	mapstats["HeapInuse"] = float64(RtMetrics.HeapInuse)
+	mapstats["HeapObjects"] = float64(RtMetrics.HeapObjects)
+	mapstats["HeapReleased"] = float64(RtMetrics.HeapReleased)
+	mapstats["HeapSys"] = float64(RtMetrics.HeapSys)
+	mapstats["LastGC"] = float64(RtMetrics.LastGC)
+	mapstats["Lookups"] = float64(RtMetrics.Lookups)
+	mapstats["MCacheInuse"] = float64(RtMetrics.MCacheInuse)
+	mapstats["MCacheSys"] = float64(RtMetrics.MCacheSys)
+	mapstats["MSpanInuse"] = float64(RtMetrics.MSpanInuse)
+	mapstats["MSpanSys"] = float64(RtMetrics.MSpanSys)
+	mapstats["Mallocs"] = float64(RtMetrics.Mallocs)
+	mapstats["NextGC"] = float64(RtMetrics.NextGC)
+	mapstats["NumForcedGC"] = float64(RtMetrics.NumForcedGC)
+	mapstats["NumGC"] = float64(RtMetrics.NumGC)
+	mapstats["OtherSys"] = float64(RtMetrics.OtherSys)
+	mapstats["PauseTotalNs"] = float64(RtMetrics.PauseTotalNs)
+	mapstats["StackInuse"] = float64(RtMetrics.StackInuse)
+	mapstats["StackSys"] = float64(RtMetrics.StackSys)
+	mapstats["Sys"] = float64(RtMetrics.Sys)
+	mapstats["TotalAlloc"] = float64(RtMetrics.TotalAlloc)
 	m.RandomValue = rand.Float64()
+	if m.PollCount < 0 {
+		return errors.New("counter is negative number")
+	}
 	m.PollCount += 1
 	m.RuntimeMemstats = mapstats
 	time.Sleep(m.pollInterval * time.Second)
+	return nil
 }
 
 func (m *RuntimeMetrics) URLMetrics(hostpath string) []string {
@@ -112,9 +114,17 @@ func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
 	return nil
 }
 
-func (m *RuntimeMetrics) NewСollect() {
+func (m *RuntimeMetrics) NewСollect(ctx context.Context, cancel context.CancelFunc) {
 	for {
-		m.AddValueMetric()
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			err := m.AddValueMetric()
+			if err != nil {
+				log.Println("Error in collect metrics:", err)
+			}
+		}
 
 	}
 }
