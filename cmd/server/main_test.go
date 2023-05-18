@@ -47,9 +47,7 @@ func TestRun(t *testing.T) {
 			},
 		},
 	}
-	flagStruct := NewFlagVarStruct()
-	flagStruct.parseFlags()
-	err := logger.Initialize(flagStruct.logLevel)
+	err := logger.Initialize("info")
 	if err != nil {
 		log.Println(err)
 	}

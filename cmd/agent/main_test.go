@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
 
+	"github.com/Zagir2000/alert/internal/logger"
 	"github.com/Zagir2000/alert/internal/metricscollect"
 	"github.com/Zagir2000/alert/internal/server/handlers"
 	"github.com/d5/tengo/assert"
@@ -34,6 +36,10 @@ func TestRunSendMetrics(t *testing.T) {
 			},
 			want: "context deadline exceeded",
 		},
+	}
+	err := logger.Initialize("info")
+	if err != nil {
+		log.Println(err)
 	}
 	ts := httptest.NewServer(handlers.Router())
 	u, err := url.Parse(ts.URL)
