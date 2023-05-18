@@ -1,10 +1,12 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Zagir2000/alert/internal/logger"
 	"github.com/Zagir2000/alert/internal/server/handlers"
 	"github.com/d5/tengo/assert"
 	"github.com/stretchr/testify/require"
@@ -44,6 +46,12 @@ func TestRun(t *testing.T) {
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
+	}
+	flagStruct := NewFlagVarStruct()
+	flagStruct.parseFlags()
+	err := logger.Initialize(flagStruct.logLevel)
+	if err != nil {
+		log.Println(err)
 	}
 	ts := httptest.NewServer(handlers.Router())
 	defer ts.Close()
