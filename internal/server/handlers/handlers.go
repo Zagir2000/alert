@@ -18,30 +18,32 @@ func MetricHandlerNew(s storage.Repository) *MetricHandler {
 	return &MetricHandler{Storage: s}
 }
 
-func (m *MetricHandler) AllMetrics(res http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
-		res.WriteHeader(http.StatusMethodNotAllowed)
-		return
+func (m *MetricHandler) AllMetrics() http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodGet {
+			res.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		res.Write([]byte("<h1>Gauge metrics</h1>"))
+		AllGaugeValues := m.Storage.GetAllGaugeValues()
+		OrderAllGaugeValues := make([]string, 0, len(AllGaugeValues))
+		for k := range AllGaugeValues {
+			OrderAllGaugeValues = append(OrderAllGaugeValues, k)
+		}
+		// sort the slice by keys
+		sort.Strings(OrderAllGaugeValues)
+		for _, k := range OrderAllGaugeValues {
+			fmt.Fprintf(res, "%s: %g\n", k, AllGaugeValues[k])
+		}
+		res.Write([]byte("<h1>Counter metrics</h1>"))
+		AllCounterValues := m.Storage.GetAllCounterValues()
+		for k, v := range AllCounterValues {
+			fmt.Fprintf(res, "%s: %d\n", k, v)
+		}
+		res.Header().Add("Content-Type", "text/plain")
+		res.WriteHeader(http.StatusOK)
 	}
-	res.Header().Add("Content-Type", "text/plain")
-	res.WriteHeader(http.StatusOK)
-	res.Write([]byte("<h1>Gauge metrics</h1>"))
-	AllGaugeValues := m.Storage.GetAllGaugeValues()
-	OrderAllGaugeValues := make([]string, 0, len(AllGaugeValues))
-	for k := range AllGaugeValues {
-		OrderAllGaugeValues = append(OrderAllGaugeValues, k)
-	}
-	// sort the slice by keys
-	sort.Strings(OrderAllGaugeValues)
-	for _, k := range OrderAllGaugeValues {
-		fmt.Fprintf(res, "%s: %g\n", k, AllGaugeValues[k])
-	}
-	res.Write([]byte("<h1>Counter metrics</h1>"))
-	AllCounterValues := m.Storage.GetAllCounterValues()
-	for k, v := range AllCounterValues {
-		res.Write([]byte(fmt.Sprintf("%s: %d\n", k, v)))
-	}
-	res.WriteHeader(http.StatusOK)
 }
 
 func (m *MetricHandler) NowValueMetrics(res http.ResponseWriter, req *http.Request) {
