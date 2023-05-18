@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Zagir2000/alert/internal/logger"
 	"github.com/d5/tengo/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -54,13 +56,17 @@ func TestMetricHandler_MainPage(t *testing.T) {
 			},
 		},
 	}
-
+	err := logger.Initialize("info")
+	if err != nil {
+		log.Println(err)
+	}
+	r := Router()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request, err := http.NewRequest("POST", tt.url, nil)
 			require.NoError(t, err)
 			w := httptest.NewRecorder()
-			r := Router()
+
 			r.ServeHTTP(w, request)
 			assert.Equal(t, w.Code, tt.want.code)
 			s := w.Header()
