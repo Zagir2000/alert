@@ -5,7 +5,7 @@ import (
 )
 
 type Repository interface {
-	AddGaugeValue(name string, value float64)
+	AddGaugeValue(name string, value float64) error
 	AddCounterValue(name string, value int64) error
 	GetGauge(name string) (float64, bool)
 	GetCounter(name string) (int64, bool)
@@ -25,8 +25,14 @@ func NewMemStorage() *memStorage {
 	}
 }
 
-func (m *memStorage) AddGaugeValue(name string, value float64) {
+func (m *memStorage) AddGaugeValue(name string, value float64) error {
 	m.Gaugedata[name] = value
+	valuenew, ok := m.Gaugedata[name]
+	if !ok && value == valuenew {
+		err := errors.New("failed to add gauge value")
+		return err
+	}
+	return nil
 }
 
 func (m *memStorage) AddCounterValue(name string, value int64) error {
@@ -34,6 +40,10 @@ func (m *memStorage) AddCounterValue(name string, value int64) error {
 		return errors.New("counter cannot decrease in value")
 	}
 	m.Counterdata[name] += value
+	valuenew, ok := m.Counterdata[name]
+	if !ok && value == valuenew {
+		errors.New("failed to add counter value")
+	}
 	return nil
 }
 

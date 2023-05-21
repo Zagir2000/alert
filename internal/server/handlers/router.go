@@ -16,5 +16,7 @@ func Router() *chi.Mux {
 	r.Post("/update/{metricType}/{metricName}/{value}", newHandStruct.NewMetrics)
 	r.Get("/", newHandStruct.AllMetrics())
 	r.Get("/value/{metricType}/{metricName}", newHandStruct.NowValueMetrics)
+	r.Post("/update/", newHandStruct.NewMetricsToJson)
+	r.Post("/value/", newHandStruct.NowValueMetricsToJson)
 	return r
 }

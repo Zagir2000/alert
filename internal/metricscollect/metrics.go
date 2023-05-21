@@ -3,22 +3,22 @@ package metricscollect
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"math/rand"
 	"runtime"
-	"sort"
 	"strings"
 	"time"
 
+	"github.com/Zagir2000/alert/internal/models"
 	"github.com/go-resty/resty/v2"
 )
 
 const (
 	counterMetric   string = "counter"
 	gaugeMetric     string = "gauge"
-	RandomValueName string = "RandomValue"
-	PollCountName   string = "PollCount"
+	randomValueName string = "RandomValue"
+	pollCountName   string = "PollCount"
+	contentType     string = "application/json"
 )
 
 type RuntimeMetrics struct {
@@ -79,34 +79,44 @@ func (m *RuntimeMetrics) AddValueMetric() error {
 	return nil
 }
 
-func (m *RuntimeMetrics) URLMetrics(hostpath string) []string {
-	urls := make([]string, 0, len(m.RuntimeMemstats)+2)
+func (m *RuntimeMetrics) URLMetrics() []models.Metrics {
+	var arrJsonMetrics []models.Metrics
 	for i, k := range m.RuntimeMemstats {
-		s := fmt.Sprintf("%f", k)
-		URL := strings.Join([]string{"http:/", hostpath, "update", gaugeMetric, i, s}, "/")
-		urls = append(urls, URL)
+		jsonGauage := models.Metrics{
+			ID:    i,
+			MType: gaugeMetric,
+			Value: &k,
+		}
+		arrJsonMetrics = append(arrJsonMetrics, jsonGauage)
 	}
-	sort.Strings(urls)
-	s := fmt.Sprintf("%f", m.RandomValue)
 
-	URLRandomGuage := strings.Join([]string{"http:/", hostpath, "update", gaugeMetric, RandomValueName, s}, "/")
-	c := fmt.Sprintf("%d", m.PollCount)
+	URLRandomGuage := models.Metrics{
+		ID:    randomValueName,
+		MType: gaugeMetric,
+		Value: &m.RandomValue,
+	}
 
-	URLCount := strings.Join([]string{"http:/", hostpath, "update", counterMetric, PollCountName, c}, "/")
-	urls = append(urls, URLRandomGuage, URLCount)
-	return urls
+	URLCount := models.Metrics{
+		ID:    pollCountName,
+		MType: counterMetric,
+		Delta: &m.PollCount,
+	}
+	arrJsonMetrics = append(arrJsonMetrics, URLRandomGuage, URLCount)
+	return arrJsonMetrics
 }
 
 func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
 
 	time.Sleep(m.reportInterval * time.Second)
-	metrics := m.URLMetrics(hostpath)
+	metrics := m.URLMetrics()
 	client := resty.New()
 	var responseErr SendMetricsError
-	for _, url := range metrics {
+	url := strings.Join([]string{"http:/", hostpath, "update"}, "/")
+	for _, jsonMetric := range metrics {
 		_, err := client.R().
+			SetBody(jsonMetric).
 			SetError(&responseErr).
-			SetHeader("Content-Type", "text/plain").
+			SetHeader("Content-Type", contentType).
 			Post(url)
 
 		if err != nil {
