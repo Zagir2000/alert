@@ -80,14 +80,14 @@ func (m *RuntimeMetrics) AddValueMetric() error {
 }
 
 func (m *RuntimeMetrics) URLMetrics() []models.Metrics {
-	var arrJsonMetrics []models.Metrics
+	var arrJSONMetrics []models.Metrics
 	for i, k := range m.RuntimeMemstats {
 		jsonGauage := models.Metrics{
 			ID:    i,
 			MType: gaugeMetric,
 			Value: &k,
 		}
-		arrJsonMetrics = append(arrJsonMetrics, jsonGauage)
+		arrJSONMetrics = append(arrJSONMetrics, jsonGauage)
 	}
 
 	URLRandomGuage := models.Metrics{
@@ -101,8 +101,8 @@ func (m *RuntimeMetrics) URLMetrics() []models.Metrics {
 		MType: counterMetric,
 		Delta: &m.PollCount,
 	}
-	arrJsonMetrics = append(arrJsonMetrics, URLRandomGuage, URLCount)
-	return arrJsonMetrics
+	arrJSONMetrics = append(arrJSONMetrics, URLRandomGuage, URLCount)
+	return arrJSONMetrics
 }
 
 func (m *RuntimeMetrics) SendMetrics(hostpath string) error {

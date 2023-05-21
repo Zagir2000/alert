@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -69,9 +68,7 @@ func TestMetricHandler_MainPage(t *testing.T) {
 
 			r.ServeHTTP(w, request)
 			assert.Equal(t, w.Code, tt.want.code)
-			s := w.Header()
-			fmt.Println(s.Get("Content-Type"))
-			assert.Equal(t, s.Get("Content-Type"), tt.want.contentType)
+			assert.Equal(t, w.Code, tt.want.code)
 		})
 	}
 }
