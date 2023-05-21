@@ -29,8 +29,7 @@ func (m *memStorage) AddGaugeValue(name string, value float64) error {
 	m.Gaugedata[name] = value
 	valuenew, ok := m.Gaugedata[name]
 	if !ok && value == valuenew {
-		err := errors.New("failed to add gauge value")
-		return err
+		return errors.New("failed to add gauge value")
 	}
 	return nil
 }
@@ -42,7 +41,7 @@ func (m *memStorage) AddCounterValue(name string, value int64) error {
 	m.Counterdata[name] += value
 	valuenew, ok := m.Counterdata[name]
 	if !ok && value == valuenew {
-		errors.New("failed to add counter value")
+		return errors.New("failed to add counter value")
 	}
 	return nil
 }
