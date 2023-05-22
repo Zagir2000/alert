@@ -25,7 +25,7 @@ func MetricHandlerNew(s storage.Repository) *MetricHandler {
 
 func (m *MetricHandler) AllMetrics() http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		if req.Method != http.MethodPost {
+		if req.Method != http.MethodGet {
 			logger.Log.Debug("got request with bad method", zap.String("method", req.Method))
 			res.WriteHeader(http.StatusMethodNotAllowed)
 			return
@@ -53,7 +53,7 @@ func (m *MetricHandler) AllMetrics() http.HandlerFunc {
 }
 
 func (m *MetricHandler) NowValueMetrics(res http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodPost {
+	if req.Method != http.MethodGet {
 		logger.Log.Debug("got request with bad method", zap.String("method", req.Method))
 		res.WriteHeader(http.StatusMethodNotAllowed)
 		return
