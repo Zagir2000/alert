@@ -41,8 +41,7 @@ func IntervalPin(pollIntervalFlag int, reportIntervalFlag int) RuntimeMetrics {
 	return RuntimeMetrics{pollInterval: time.Duration(pollIntervalFlag), reportInterval: time.Duration(reportIntervalFlag)}
 }
 func (m *RuntimeMetrics) AddValueMetric() error {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+
 	mapstats := make(map[string]float64)
 	var RtMetrics runtime.MemStats
 	runtime.ReadMemStats(&RtMetrics)
@@ -83,42 +82,20 @@ func (m *RuntimeMetrics) AddValueMetric() error {
 	return nil
 }
 
-func (m *RuntimeMetrics) URLMetrics() []models.Metrics {
-	var arrJSONMetrics []models.Metrics
-	for i, k := range m.RuntimeMemstats {
-		jsonGauage := models.Metrics{
-			ID:    i,
-			MType: gaugeMetric,
-			Value: &k,
-		}
-		arrJSONMetrics = append(arrJSONMetrics, jsonGauage)
-	}
-
-	URLRandomGuage := models.Metrics{
-		ID:    randomValueName,
-		MType: gaugeMetric,
-		Value: &m.RandomValue,
-	}
-
-	URLCount := models.Metrics{
-		ID:    pollCountName,
-		MType: counterMetric,
-		Delta: &m.PollCount,
-	}
-	arrJSONMetrics = append(arrJSONMetrics, URLRandomGuage, URLCount)
-	return arrJSONMetrics
-}
-
 func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
 
 	time.Sleep(m.reportInterval * time.Second)
-	metrics := m.URLMetrics()
 	client := resty.New()
 	var responseErr SendMetricsError
 	url := strings.Join([]string{"http:/", hostpath, "update/"}, "/")
-	for _, jsonMetric := range metrics {
+	for k, v := range m.RuntimeMemstats {
+		jsonGauage := models.Metrics{
+			ID:    k,
+			MType: gaugeMetric,
+			Value: &v,
+		}
 		_, err := client.R().
-			SetBody(jsonMetric).
+			SetBody(jsonGauage).
 			SetError(&responseErr).
 			SetHeader("Content-Type", contentType).
 			Post(url)
@@ -126,6 +103,34 @@ func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
 		if err != nil {
 			return err
 		}
+	}
+	URLRandomGuage := models.Metrics{
+		ID:    randomValueName,
+		MType: gaugeMetric,
+		Value: &m.RandomValue,
+	}
+	_, err := client.R().
+		SetBody(URLRandomGuage).
+		SetError(&responseErr).
+		SetHeader("Content-Type", contentType).
+		Post(url)
+
+	if err != nil {
+		return err
+	}
+	URLCount := models.Metrics{
+		ID:    pollCountName,
+		MType: counterMetric,
+		Delta: &m.PollCount,
+	}
+	_, err = client.R().
+		SetBody(URLCount).
+		SetError(&responseErr).
+		SetHeader("Content-Type", contentType).
+		Post(url)
+
+	if err != nil {
+		return err
 	}
 	return nil
 }
