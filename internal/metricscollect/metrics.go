@@ -115,7 +115,7 @@ func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
 	metrics := m.URLMetrics()
 	client := resty.New()
 	var responseErr SendMetricsError
-	url := strings.Join([]string{"http:/", hostpath, "update"}, "/")
+	url := strings.Join([]string{"http:/", hostpath, "update/"}, "/")
 	for _, jsonMetric := range metrics {
 		_, err := client.R().
 			SetBody(jsonMetric).
