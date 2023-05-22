@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Zagir2000/alert/internal/models"
@@ -27,6 +28,7 @@ type RuntimeMetrics struct {
 	RandomValue     float64
 	pollInterval    time.Duration
 	reportInterval  time.Duration
+	mutex           sync.Mutex
 }
 
 type SendMetricsError struct {
@@ -39,6 +41,8 @@ func IntervalPin(pollIntervalFlag int, reportIntervalFlag int) RuntimeMetrics {
 	return RuntimeMetrics{pollInterval: time.Duration(pollIntervalFlag), reportInterval: time.Duration(reportIntervalFlag)}
 }
 func (m *RuntimeMetrics) AddValueMetric() error {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	mapstats := make(map[string]float64)
 	var RtMetrics runtime.MemStats
 	runtime.ReadMemStats(&RtMetrics)
