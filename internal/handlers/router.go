@@ -10,8 +10,6 @@ func Router() chi.Router {
 	m := storage.NewMemStorage()
 	newHandStruct := MetricHandlerNew(m)
 	r := chi.NewRouter()
-	// r.Get("/value/*", handlers.GetMetric)
-	// r.Get("/", handlers.ShowMetrics)
 	r.Use(logger.WithLogging)
 	r.Post("/update/", gzipMiddleware(newHandStruct.NewMetricsToJSON()))
 	r.Post("/value/", gzipMiddleware(newHandStruct.NowValueMetricsToJSON()))
