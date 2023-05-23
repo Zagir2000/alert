@@ -141,7 +141,6 @@ func (m *MetricHandler) NowValueMetricsToJSON() http.HandlerFunc {
 			res.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
-		fmt.Println(m.Storage.GetAllCounterValues())
 		// десериализуем запрос в структуру модели
 		logger.Log.Debug("decoding request")
 		var jsonMetrics models.Metrics

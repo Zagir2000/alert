@@ -134,18 +134,17 @@ func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
 			Post(url)
 
 		if err != nil {
-			if err != nil {
-				if errors.Is(err, syscall.EPIPE) {
-					_, err := client.R().
-						SetHeader("Content-Type", "application/json").
-						SetBody(k).
-						Post(url)
-					if err != nil {
-						return err
-					}
-				}
 
+			if errors.Is(err, syscall.EPIPE) {
+				_, err := client.R().
+					SetHeader("Content-Type", "application/json").
+					SetBody(k).
+					Post(url)
+				if err != nil {
+					return err
+				}
 			}
+
 		}
 	}
 
