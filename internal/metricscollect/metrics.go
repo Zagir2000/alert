@@ -2,12 +2,13 @@ package metricscollect
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log"
 	"math/rand"
 	"runtime"
 	"strings"
-	"sync"
+	"syscall"
 	"time"
 
 	"github.com/Zagir2000/alert/internal/models"
@@ -28,7 +29,6 @@ type RuntimeMetrics struct {
 	RandomValue     float64
 	pollInterval    time.Duration
 	reportInterval  time.Duration
-	mutex           sync.Mutex
 }
 
 type SendMetricsError struct {
@@ -38,8 +38,9 @@ type SendMetricsError struct {
 }
 
 func IntervalPin(pollIntervalFlag int, reportIntervalFlag int) RuntimeMetrics {
-	return RuntimeMetrics{pollInterval: time.Duration(pollIntervalFlag), reportInterval: time.Duration(reportIntervalFlag)}
+	return RuntimeMetrics{pollInterval: time.Duration(pollIntervalFlag), reportInterval: time.Duration(reportIntervalFlag), RuntimeMemstats: make(map[string]float64)}
 }
+
 func (m *RuntimeMetrics) AddValueMetric() error {
 
 	mapstats := make(map[string]float64)
@@ -72,7 +73,7 @@ func (m *RuntimeMetrics) AddValueMetric() error {
 	mapstats["StackSys"] = float64(RtMetrics.StackSys)
 	mapstats["Sys"] = float64(RtMetrics.Sys)
 	mapstats["TotalAlloc"] = float64(RtMetrics.TotalAlloc)
-	m.RandomValue = rand.Float64()
+	m.RandomValue = rand.Float64() * 10000
 	if m.PollCount < 0 {
 		return errors.New("counter is negative number")
 	}
@@ -81,57 +82,73 @@ func (m *RuntimeMetrics) AddValueMetric() error {
 	time.Sleep(m.pollInterval * time.Second)
 	return nil
 }
-
-func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
-
-	time.Sleep(m.reportInterval * time.Second)
-	client := resty.New()
-	var responseErr SendMetricsError
-	url := strings.Join([]string{"http:/", hostpath, "update/"}, "/")
+func (m *RuntimeMetrics) jsonMetricsToBytes() [][]byte {
+	var res [][]byte
 	for k, v := range m.RuntimeMemstats {
 		jsonGauage := models.Metrics{
 			ID:    k,
 			MType: gaugeMetric,
 			Value: &v,
 		}
-		_, err := client.R().
-			SetBody(jsonGauage).
-			SetError(&responseErr).
-			SetHeader("Content-Type", contentType).
-			Post(url)
-
+		out, err := json.Marshal(jsonGauage)
 		if err != nil {
-			return err
+			log.Fatal(err)
 		}
+		res = append(res, out)
 	}
 	URLRandomGuage := models.Metrics{
 		ID:    randomValueName,
 		MType: gaugeMetric,
 		Value: &m.RandomValue,
 	}
-	_, err := client.R().
-		SetBody(URLRandomGuage).
-		SetError(&responseErr).
-		SetHeader("Content-Type", contentType).
-		Post(url)
 
+	out, err := json.Marshal(URLRandomGuage)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
+	res = append(res, out)
+
 	URLCount := models.Metrics{
 		ID:    pollCountName,
 		MType: counterMetric,
 		Delta: &m.PollCount,
 	}
-	_, err = client.R().
-		SetBody(URLCount).
-		SetError(&responseErr).
-		SetHeader("Content-Type", contentType).
-		Post(url)
-
+	out, err = json.Marshal(URLCount)
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
+	res = append(res, out)
+	return res
+}
+func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
+
+	time.Sleep(m.reportInterval * time.Second)
+	client := resty.New()
+	var responseErr SendMetricsError
+	url := strings.Join([]string{"http:/", hostpath, "update/"}, "/")
+	for _, k := range m.jsonMetricsToBytes() {
+		_, err := client.R().
+			SetError(&responseErr).
+			SetHeader("Content-Type", contentType).
+			SetBody(k).
+			Post(url)
+
+		if err != nil {
+			if err != nil {
+				if errors.Is(err, syscall.EPIPE) {
+					_, err := client.R().
+						SetHeader("Content-Type", "application/json").
+						SetBody(k).
+						Post(url)
+					if err != nil {
+						return err
+					}
+				}
+
+			}
+		}
+	}
+
 	return nil
 }
 
