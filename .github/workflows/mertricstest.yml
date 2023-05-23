@@ -217,7 +217,6 @@ jobs:
           metricstest -test.v -test.run=^TestIteration7$ \
             -agent-binary-path=cmd/agent/agent \
             -binary-path=cmd/server/server \
-            -server-port=$SERVER_PORT \
             -source-path=.
 
       - name: "Code increment #8"
