@@ -13,9 +13,9 @@ func Router() chi.Router {
 	r.Use(logger.WithLogging)
 	r.Post("/update/", gzipMiddleware(newHandStruct.NewMetricsToJSON()))
 	r.Post("/value/", gzipMiddleware(newHandStruct.NowValueMetricsToJSON()))
-	r.Post("/update/{metricType}/{metricName}/{value}", newHandStruct.NewMetrics)
-	r.Get("/", newHandStruct.AllMetrics())
-	r.Get("/value/{metricType}/{metricName}", newHandStruct.NowValueMetrics)
+	r.Post("/update/{metricType}/{metricName}/{value}", gzipMiddleware(newHandStruct.NewMetrics))
+	r.Get("/", gzipMiddleware(newHandStruct.AllMetrics()))
+	r.Get("/value/{metricType}/{metricName}", gzipMiddleware(newHandStruct.NowValueMetrics))
 
 	return r
 }
