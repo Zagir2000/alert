@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Zagir2000/alert/internal/handlers"
 	"github.com/Zagir2000/alert/internal/logger"
-	"github.com/Zagir2000/alert/internal/server/handlers"
 )
 
 func main() {

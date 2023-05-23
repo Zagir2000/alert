@@ -47,7 +47,7 @@ func (m *MetricHandler) AllMetrics() http.HandlerFunc {
 		for k, v := range AllCounterValues {
 			fmt.Fprintf(res, "%s: %d\n", k, v)
 		}
-		res.Header().Add("Content-Type", "text/plain")
+		res.Header().Add("Content-Type", "text/html")
 		res.WriteHeader(http.StatusOK)
 	}
 }

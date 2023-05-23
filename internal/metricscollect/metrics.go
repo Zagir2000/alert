@@ -1,6 +1,8 @@
 package metricscollect
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -21,6 +23,7 @@ const (
 	randomValueName string = "RandomValue"
 	pollCountName   string = "PollCount"
 	contentType     string = "application/json"
+	compressType    string = "gzip"
 )
 
 type RuntimeMetrics struct {
@@ -127,18 +130,24 @@ func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
 	var responseErr SendMetricsError
 	url := strings.Join([]string{"http:/", hostpath, "update/"}, "/")
 	for _, k := range m.jsonMetricsToBytes() {
-		_, err := client.R().
+		res, err := gzipCompress(k)
+		if err != nil {
+			return err
+		}
+		_, err = client.R().
 			SetError(&responseErr).
+			SetHeader("Content-Encoding", compressType).
 			SetHeader("Content-Type", contentType).
-			SetBody(k).
+			SetBody(res).
 			Post(url)
 
 		if err != nil {
 
 			if errors.Is(err, syscall.EPIPE) {
 				_, err := client.R().
-					SetHeader("Content-Type", "application/json").
-					SetBody(k).
+					SetHeader("Content-Type", contentType).
+					SetHeader("Content-Encoding", compressType).
+					SetBody(res).
 					Post(url)
 				if err != nil {
 					return err
@@ -164,4 +173,22 @@ func (m *RuntimeMetrics) NewСollect(ctx context.Context, cancel context.CancelF
 		}
 
 	}
+}
+
+func gzipCompress(data []byte) ([]byte, error) {
+	var buf bytes.Buffer
+
+	w, err := gzip.NewWriterLevel(&buf, gzip.BestSpeed)
+	if err != nil {
+		return nil, err
+	}
+	_, err = w.Write(data)
+	if err != nil {
+		return nil, err
+	}
+	err = w.Close()
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), err
 }
