@@ -35,7 +35,7 @@ func TestRun(t *testing.T) {
 			args: "/update/counter/metric/b",
 			want: want{
 				code:        400,
-				contentType: "",
+				contentType: "application/x-gzip",
 			},
 		},
 		{
