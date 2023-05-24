@@ -143,7 +143,7 @@ func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
 
 		if err != nil {
 
-			if errors.Is(err, syscall.EPIPE) {
+			if errors.Is(err, syscall.ECONNRESET) && errors.Is(err, syscall.ECONNREFUSED) {
 				_, err := client.R().
 					SetHeader("Content-Type", contentType).
 					SetHeader("Content-Encoding", compressType).
