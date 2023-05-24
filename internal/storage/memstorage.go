@@ -11,6 +11,7 @@ type Repository interface {
 	GetCounter(name string) (int64, bool)
 	GetAllGaugeValues() map[string]float64
 	GetAllCounterValues() map[string]int64
+	LoadMetricsJson(metricLoad *metricsFile)
 }
 
 type memStorage struct {
@@ -62,4 +63,9 @@ func (m *memStorage) GetAllGaugeValues() map[string]float64 {
 
 func (m *memStorage) GetAllCounterValues() map[string]int64 {
 	return m.Counterdata
+}
+
+func (m *memStorage) LoadMetricsJson(metricLoad *metricsFile) {
+	m.Counterdata = metricLoad.Counter
+	m.Gaugedata = metricLoad.Gauge
 }

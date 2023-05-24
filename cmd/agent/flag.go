@@ -2,9 +2,11 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/Zagir2000/alert/internal/logger"
+	"go.uber.org/zap"
 )
 
 type FlagVar struct {
@@ -34,14 +36,14 @@ func (f *FlagVar) parseFlags() {
 	if envReportInterval, ok := os.LookupEnv("REPORT_INTERVAL"); ok {
 		envReportIntervalInt, err := strconv.Atoi(envReportInterval)
 		if err != nil {
-			fmt.Println("wrong REPORT_INTERVAL format: is not a integer", err)
+			logger.Log.Warn("wrong REPORT_INTERVAL format: is not a integer", zap.Error(err))
 		}
 		f.reportInterval = envReportIntervalInt
 	}
 	if envPollInterval, ok := os.LookupEnv("POLL_INTERVAL"); ok {
 		envPollIntervalInt, err := strconv.Atoi(envPollInterval)
 		if err != nil {
-			fmt.Println("wrong POLL_INTERVAL format: is not a integer", err)
+			logger.Log.Warn("wrong POLL_INTERVAL format: is not a integer", zap.Error(err))
 		}
 		f.pollInterval = envPollIntervalInt
 	}

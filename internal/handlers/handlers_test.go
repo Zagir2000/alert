@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/Zagir2000/alert/internal/logger"
+	"github.com/Zagir2000/alert/internal/storage"
 	"github.com/d5/tengo/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -59,7 +60,9 @@ func TestMetricHandler_MainPage(t *testing.T) {
 	if err != nil {
 		log.Println(err)
 	}
-	r := Router()
+	memStorage := storage.NewMemStorage()
+	newHandStruct := MetricHandlerNew(memStorage)
+	r := Router(newHandStruct)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request, err := http.NewRequest("POST", tt.url, nil)
