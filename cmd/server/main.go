@@ -26,7 +26,7 @@ func run(flagStruct *FlagVar) error {
 		return err
 	}
 	memStorage := storage.NewMemStorage()
-	if flagStruct.restore == true {
+	if flagStruct.restore {
 		err := storage.MetricsLoadJSON(flagStruct.fileStoragePath, memStorage)
 		if err != nil {
 			logger.Log.Error("failed to load file", zap.Error(err))
@@ -34,7 +34,7 @@ func run(flagStruct *FlagVar) error {
 		go func() {
 			for {
 				time.Sleep(time.Duration(flagStruct.storeIntervall) * time.Second)
-				err = storage.MetricsSaveJson(flagStruct.fileStoragePath, memStorage)
+				err = storage.MetricsSaveJSON(flagStruct.fileStoragePath, memStorage)
 				if err != nil {
 					logger.Log.Error("failed to save file", zap.Error(err))
 				}

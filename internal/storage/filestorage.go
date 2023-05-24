@@ -61,7 +61,7 @@ func (p *Producer) Close() error {
 	return p.file.Close()
 }
 
-func MetricsSaveJson(fname string, m *memStorage) error {
+func MetricsSaveJSON(fname string, m *memStorage) error {
 	producer, err := NewProducer(fname)
 	if err != nil {
 		return err
