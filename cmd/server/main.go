@@ -26,19 +26,21 @@ func run(flagStruct *FlagVar) error {
 		return err
 	}
 	memStorage := storage.NewMemStorage()
-
 	if flagStruct.restore == true {
-		err := storage.MetricsLoadJson(flagStruct.fileStoragePath, memStorage)
+		err := storage.MetricsLoadJSON(flagStruct.fileStoragePath, memStorage)
 		if err != nil {
 			logger.Log.Error("failed to load file", zap.Error(err))
 		}
 		go func() {
-			time.Sleep(time.Duration(flagStruct.storeIntervall) * time.Second)
-			err := storage.MetricsSaveJson(flagStruct.fileStoragePath, memStorage)
-			if err != nil {
-				logger.Log.Error("failed to save file", zap.Error(err))
+			for {
+				time.Sleep(time.Duration(flagStruct.storeIntervall) * time.Second)
+				err = storage.MetricsSaveJson(flagStruct.fileStoragePath, memStorage)
+				if err != nil {
+					logger.Log.Error("failed to save file", zap.Error(err))
+				}
 			}
 		}()
+
 	}
 
 	newHandStruct := handlers.MetricHandlerNew(memStorage)

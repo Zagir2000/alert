@@ -21,7 +21,7 @@ type Consumer struct {
 }
 
 func NewProducer(fileName string) (*Producer, error) {
-	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return nil, err
 	}
@@ -41,20 +41,16 @@ func NewConsumer(fileName string) (*Consumer, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	return &Consumer{
-		file:    file,
-		decoder: json.NewDecoder(file),
-	}, nil
+	return &Consumer{file: file, decoder: json.NewDecoder(file)}, nil
 }
 
 func (c *Consumer) ReadMetrics() (*metricsFile, error) {
-	metrics := &metricsFile{}
+	var metrics metricsFile
 	if err := c.decoder.Decode(&metrics); err != nil {
 		return nil, err
 	}
 
-	return metrics, nil
+	return &metrics, nil
 }
 
 func (c *Consumer) Close() error {
@@ -72,14 +68,17 @@ func MetricsSaveJson(fname string, m *memStorage) error {
 	}
 	defer producer.Close()
 	// сохраняем данные в файл
-	metrics := metricsFile{}
+	metrics := &metricsFile{}
 	metrics.Counter = m.GetAllCounterValues()
 	metrics.Gauge = m.GetAllGaugeValues()
 
-	return producer.WriteMetrics(&metrics)
+	return producer.WriteMetrics(metrics)
 }
 
-func MetricsLoadJson(fname string, m *memStorage) error {
+func MetricsLoadJSON(fname string, m *memStorage) error {
+	if _, err := os.Stat(fname); os.IsNotExist(err) {
+		return nil
+	}
 	consumer, err := NewConsumer(fname)
 	if err != nil {
 		return err
@@ -89,7 +88,7 @@ func MetricsLoadJson(fname string, m *memStorage) error {
 	if err != nil {
 		return err
 	}
-	m.LoadMetricsJson(metricsFile)
+	m.LoadMetricsJSON(metricsFile)
 	// сохраняем данные в файл
 
 	return nil
