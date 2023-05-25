@@ -88,7 +88,7 @@ func (m *RuntimeMetrics) AddValueMetric() error {
 func (m *RuntimeMetrics) jsonMetricsToBytes() [][]byte {
 	var res [][]byte
 	for k, v := range m.RuntimeMemstats {
-		jsonGauage := models.Metrics{
+		jsonGauage := &models.Metrics{
 			ID:    k,
 			MType: gaugeMetric,
 			Value: &v,
@@ -99,7 +99,7 @@ func (m *RuntimeMetrics) jsonMetricsToBytes() [][]byte {
 		}
 		res = append(res, out)
 	}
-	URLRandomGuage := models.Metrics{
+	URLRandomGuage := &models.Metrics{
 		ID:    randomValueName,
 		MType: gaugeMetric,
 		Value: &m.RandomValue,
@@ -111,7 +111,7 @@ func (m *RuntimeMetrics) jsonMetricsToBytes() [][]byte {
 	}
 	res = append(res, out)
 
-	URLCount := models.Metrics{
+	URLCount := &models.Metrics{
 		ID:    pollCountName,
 		MType: counterMetric,
 		Delta: &m.PollCount,

@@ -10,10 +10,10 @@ func Router(newHandStruct *MetricHandler) chi.Router {
 	r := chi.NewRouter()
 	r.Use(logger.WithLogging)
 	r.Post("/update/", gzipMiddleware(newHandStruct.NewMetricsToJSON()))
-	r.Post("/value/", gzipMiddleware(newHandStruct.NowValueMetricsToJSON()))
-	r.Post("/update/{metricType}/{metricName}/{value}", gzipMiddleware(newHandStruct.NewMetrics))
-	r.Get("/", gzipMiddleware(newHandStruct.AllMetrics))
-	r.Get("/value/{metricType}/{metricName}", gzipMiddleware(newHandStruct.NowValueMetrics))
+	r.Post("/value/", gzipMiddleware(newHandStruct.AddValueMetricsToJSON()))
+	r.Post("/update/{metricType}/{metricName}/{value}", gzipMiddleware(newHandStruct.UpdateNewMetrics))
+	r.Get("/", gzipMiddleware(newHandStruct.GetAllMetrics))
+	r.Get("/value/{metricType}/{metricName}", gzipMiddleware(newHandStruct.GetNowValueMetrics))
 
 	return r
 }

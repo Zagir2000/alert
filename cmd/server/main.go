@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
 	"net/http"
 	"time"
@@ -27,16 +27,24 @@ func run(flagStruct *FlagVar) error {
 	}
 	memStorage := storage.NewMemStorage()
 	if flagStruct.restore {
-		err := storage.MetricsLoadJSON(flagStruct.fileStoragePath, memStorage)
+		err := memStorage.MetricsLoadJSON(flagStruct.fileStoragePath)
 		if err != nil {
 			logger.Log.Error("failed to load file", zap.Error(err))
 		}
+		ctx := context.Background()
+		ctx, cancel := context.WithCancel(ctx)
 		go func() {
-			for {
-				time.Sleep(time.Duration(flagStruct.storeIntervall) * time.Second)
-				err = storage.MetricsSaveJSON(flagStruct.fileStoragePath, memStorage)
-				if err != nil {
-					logger.Log.Error("failed to save file", zap.Error(err))
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				for {
+					err = storage.MetricsSaveJSON(flagStruct.fileStoragePath, memStorage)
+					if err != nil {
+						logger.Log.Error("failed to save file", zap.Error(err))
+						cancel()
+					}
+					time.Sleep(time.Duration(flagStruct.storeIntervall) * time.Second)
 				}
 			}
 		}()
@@ -45,6 +53,6 @@ func run(flagStruct *FlagVar) error {
 
 	newHandStruct := handlers.MetricHandlerNew(memStorage)
 	router := handlers.Router(newHandStruct)
-	fmt.Println("Running server on", flagStruct.runAddr)
+	// logger.Log.Info("Running server on", zap.String(flagStruct.runAddr))
 	return http.ListenAndServe(flagStruct.runAddr, router)
 }

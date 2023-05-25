@@ -5,9 +5,11 @@ import (
 	"os"
 )
 
-type metricsFile struct {
-	Gauge   map[string]float64 `json:"gauge"`
-	Counter map[string]int64   `json:"counter"`
+type metricsFileGauge struct {
+	Gauge map[string]float64 `json:"gauge"`
+}
+type metricsFileCounter struct {
+	Counter map[string]int64 `json:"counter"`
 }
 
 type Producer struct {
@@ -32,8 +34,16 @@ func NewProducer(fileName string) (*Producer, error) {
 	}, nil
 }
 
-func (p *Producer) WriteMetrics(metric *metricsFile) error {
-	return p.encoder.Encode(&metric)
+func (p *Producer) WriteMetrics(metricGauge *metricsFileGauge, metricCounter *metricsFileCounter) error {
+	err := p.encoder.Encode(&metricGauge)
+	if err != nil {
+		return err
+	}
+	err = p.encoder.Encode(&metricCounter)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func NewConsumer(fileName string) (*Consumer, error) {
@@ -44,13 +54,16 @@ func NewConsumer(fileName string) (*Consumer, error) {
 	return &Consumer{file: file, decoder: json.NewDecoder(file)}, nil
 }
 
-func (c *Consumer) ReadMetrics() (*metricsFile, error) {
-	var metrics metricsFile
-	if err := c.decoder.Decode(&metrics); err != nil {
-		return nil, err
+func (c *Consumer) ReadMetrics() (*metricsFileGauge, *metricsFileCounter, error) {
+	var metricsGauge metricsFileGauge
+	var metricsCounter metricsFileCounter
+	if err := c.decoder.Decode(&metricsGauge); err != nil {
+		return nil, nil, err
 	}
-
-	return &metrics, nil
+	if err := c.decoder.Decode(&metricsCounter); err != nil {
+		return nil, nil, err
+	}
+	return &metricsGauge, &metricsCounter, nil
 }
 
 func (c *Consumer) Close() error {
@@ -68,14 +81,18 @@ func MetricsSaveJSON(fname string, m *memStorage) error {
 	}
 	defer producer.Close()
 	// сохраняем данные в файл
-	metrics := &metricsFile{}
-	metrics.Counter = m.GetAllCounterValues()
-	metrics.Gauge = m.GetAllGaugeValues()
-
-	return producer.WriteMetrics(metrics)
+	metricsGauge := &metricsFileGauge{}
+	metricsCounter := &metricsFileCounter{}
+	metricsCounter.Counter = m.GetAllCounterValues()
+	metricsGauge.Gauge = m.GetAllGaugeValues()
+	err = producer.WriteMetrics(metricsGauge, metricsCounter)
+	if err != nil {
+		return err
+	}
+	return err
 }
 
-func MetricsLoadJSON(fname string, m *memStorage) error {
+func (m *memStorage) MetricsLoadJSON(fname string) error {
 	if _, err := os.Stat(fname); os.IsNotExist(err) {
 		return nil
 	}
@@ -84,11 +101,11 @@ func MetricsLoadJSON(fname string, m *memStorage) error {
 		return err
 	}
 	defer consumer.Close()
-	metricsFile, err := consumer.ReadMetrics()
+	metricsGauge, MetricsCounter, err := consumer.ReadMetrics()
 	if err != nil {
 		return err
 	}
-	m.LoadMetricsJSON(metricsFile)
+	m.LoadMetricsJSON(metricsGauge, MetricsCounter)
 	// сохраняем данные в файл
 
 	return nil

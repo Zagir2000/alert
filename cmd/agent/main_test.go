@@ -2,7 +2,7 @@ package main
 
 import "testing"
 
-func Test_main(t *testing.T) {
+func TestMain(t *testing.T) {
 	tests := []struct {
 		name string
 	}{

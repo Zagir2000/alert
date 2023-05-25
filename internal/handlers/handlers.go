@@ -23,7 +23,7 @@ func MetricHandlerNew(s storage.Repository) *MetricHandler {
 	return &MetricHandler{Storage: s}
 }
 
-func (m *MetricHandler) AllMetrics(res http.ResponseWriter, req *http.Request) {
+func (m *MetricHandler) GetAllMetrics(res http.ResponseWriter, req *http.Request) {
 
 	if req.Method != http.MethodGet {
 		logger.Log.Debug("got request with bad method", zap.String("method", req.Method))
@@ -50,7 +50,7 @@ func (m *MetricHandler) AllMetrics(res http.ResponseWriter, req *http.Request) {
 
 }
 
-func (m *MetricHandler) NowValueMetrics(res http.ResponseWriter, req *http.Request) {
+func (m *MetricHandler) GetNowValueMetrics(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		logger.Log.Debug("got request with bad method", zap.String("method", req.Method))
 		res.WriteHeader(http.StatusMethodNotAllowed)
@@ -84,7 +84,7 @@ func (m *MetricHandler) NowValueMetrics(res http.ResponseWriter, req *http.Reque
 	res.WriteHeader(http.StatusOK)
 }
 
-func (m *MetricHandler) NewMetrics(res http.ResponseWriter, req *http.Request) {
+func (m *MetricHandler) UpdateNewMetrics(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		logger.Log.Debug("got request with bad method", zap.String("method", req.Method))
 		res.WriteHeader(http.StatusMethodNotAllowed)
@@ -132,8 +132,8 @@ func (m *MetricHandler) NewMetrics(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 }
 
-func (m *MetricHandler) NowValueMetricsToJSON() http.HandlerFunc {
-	return func(res http.ResponseWriter, req *http.Request) {
+func (m *MetricHandler) AddValueMetricsToJSON() http.HandlerFunc {
+	addValueFn := func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodPost {
 			logger.Log.Debug("got request with bad method", zap.String("method", req.Method))
 			res.WriteHeader(http.StatusMethodNotAllowed)
@@ -182,9 +182,10 @@ func (m *MetricHandler) NowValueMetricsToJSON() http.HandlerFunc {
 		res.WriteHeader(http.StatusOK)
 		res.Write(response)
 	}
+	return addValueFn
 }
 func (m *MetricHandler) NewMetricsToJSON() http.HandlerFunc {
-	return func(res http.ResponseWriter, req *http.Request) {
+	newMetricsFn := func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodPost {
 			logger.Log.Debug("got request with bad method", zap.String("method", req.Method))
 			res.WriteHeader(http.StatusMethodNotAllowed)
@@ -245,4 +246,5 @@ func (m *MetricHandler) NewMetricsToJSON() http.HandlerFunc {
 		res.WriteHeader(http.StatusOK)
 		res.Write(response)
 	}
+	return newMetricsFn
 }
