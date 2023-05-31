@@ -132,119 +132,117 @@ func (m *MetricHandler) UpdateNewMetrics(res http.ResponseWriter, req *http.Requ
 	res.WriteHeader(http.StatusOK)
 }
 
-func (m *MetricHandler) AddValueMetricsToJSON() http.HandlerFunc {
-	addValueFn := func(res http.ResponseWriter, req *http.Request) {
-		if req.Method != http.MethodPost {
-			logger.Log.Debug("got request with bad method", zap.String("method", req.Method))
-			res.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
-		// десериализуем запрос в структуру модели
-		logger.Log.Debug("decoding request")
-		var jsonMetrics models.Metrics
-		dec := json.NewDecoder(req.Body)
-		if err := dec.Decode(&jsonMetrics); err != nil {
-			logger.Log.Debug("cannot decode request JSON body", zap.Error(err))
-			res.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		// заполняем модель ответа
-		switch strings.ToLower(jsonMetrics.MType) {
-		case "counter":
-			value, ok := m.Storage.GetCounter(jsonMetrics.ID)
-			if !ok {
-				logger.Log.Debug("cannot get counter value")
-				res.WriteHeader(http.StatusNotFound)
-				return
-			}
-			jsonMetrics.Delta = &value
-		case "gauge":
-			value, ok := m.Storage.GetGauge(jsonMetrics.ID)
-			if !ok {
-				logger.Log.Debug("cannot get gauge value")
-				res.WriteHeader(http.StatusNotFound)
-				return
-			}
-			jsonMetrics.Value = &value
-		default:
-			{
-				logger.Log.Debug("could not determine the type of metric")
-				res.WriteHeader(http.StatusBadRequest)
-				return
-			}
-		}
-		response, err := json.Marshal(jsonMetrics)
-		if err != nil {
-			logger.Log.Debug("cannot marshal to json", zap.Error(err))
-			return
-		}
-		res.Header().Add("Content-Type", "application/json")
-		res.WriteHeader(http.StatusOK)
-		res.Write(response)
+func (m *MetricHandler) AddValueMetricsToJSON(res http.ResponseWriter, req *http.Request) {
+
+	if req.Method != http.MethodPost {
+		logger.Log.Debug("got request with bad method", zap.String("method", req.Method))
+		res.WriteHeader(http.StatusMethodNotAllowed)
+		return
 	}
-	return addValueFn
+	// десериализуем запрос в структуру модели
+	logger.Log.Debug("decoding request")
+	var jsonMetrics models.Metrics
+	dec := json.NewDecoder(req.Body)
+	if err := dec.Decode(&jsonMetrics); err != nil {
+		logger.Log.Debug("cannot decode request JSON body", zap.Error(err))
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	// заполняем модель ответа
+	switch strings.ToLower(jsonMetrics.MType) {
+	case "counter":
+		value, ok := m.Storage.GetCounter(jsonMetrics.ID)
+		if !ok {
+			logger.Log.Debug("cannot get counter value")
+			res.WriteHeader(http.StatusNotFound)
+			return
+		}
+		jsonMetrics.Delta = &value
+	case "gauge":
+		value, ok := m.Storage.GetGauge(jsonMetrics.ID)
+		if !ok {
+			logger.Log.Debug("cannot get gauge value")
+			res.WriteHeader(http.StatusNotFound)
+			return
+		}
+		jsonMetrics.Value = &value
+	default:
+		{
+			logger.Log.Debug("could not determine the type of metric")
+			res.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+	response, err := json.Marshal(jsonMetrics)
+	if err != nil {
+		logger.Log.Debug("cannot marshal to json", zap.Error(err))
+
+	}
+	res.Header().Add("Content-Type", "application/json")
+	res.WriteHeader(http.StatusOK)
+	res.Write(response)
+
 }
-func (m *MetricHandler) NewMetricsToJSON() http.HandlerFunc {
-	newMetricsFn := func(res http.ResponseWriter, req *http.Request) {
-		if req.Method != http.MethodPost {
-			logger.Log.Debug("got request with bad method", zap.String("method", req.Method))
-			res.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
-		// десериализуем запрос в структуру модели
-		logger.Log.Debug("decoding request")
-		var jsonMetrics models.Metrics
-		dec := json.NewDecoder(req.Body)
-		if err := dec.Decode(&jsonMetrics); err != nil {
-			logger.Log.Debug("cannot decode request JSON body", zap.Error(err))
-			res.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		// заполняем модель ответа
-		switch strings.ToLower(jsonMetrics.MType) {
-		case "counter":
-			err := m.Storage.AddCounterValue(jsonMetrics.ID, *jsonMetrics.Delta)
-			if err != nil {
-				logger.Log.Debug("cannot add new counter value")
-				res.WriteHeader(http.StatusNotFound)
-				return
-			}
-			value, ok := m.Storage.GetCounter(jsonMetrics.ID)
-			if !ok {
-				logger.Log.Debug("cannot get counter value")
-				res.WriteHeader(http.StatusNotFound)
-				return
-			}
-			jsonMetrics.Delta = &value
-		case "gauge":
-			err := m.Storage.AddGaugeValue(jsonMetrics.ID, *jsonMetrics.Value)
-			if err != nil {
-				logger.Log.Debug("cannot add new gauge value")
-				res.WriteHeader(http.StatusNotFound)
-				return
-			}
-			value, ok := m.Storage.GetGauge(jsonMetrics.ID)
-			if !ok {
-				logger.Log.Debug("cannot get gauge value")
-				res.WriteHeader(http.StatusNotFound)
-				return
-			}
-			jsonMetrics.Value = &value
-		default:
-			{
-				logger.Log.Debug("could not determine the type of metric")
-				res.WriteHeader(http.StatusBadRequest)
-				return
-			}
-		}
-		response, err := json.Marshal(jsonMetrics)
-		if err != nil {
-			logger.Log.Debug("cannot marshal to json", zap.Error(err))
-			return
-		}
-		res.Header().Add("Content-Type", "application/json")
-		res.WriteHeader(http.StatusOK)
-		res.Write(response)
+func (m *MetricHandler) NewMetricsToJSON(res http.ResponseWriter, req *http.Request) {
+
+	if req.Method != http.MethodPost {
+		logger.Log.Debug("got request with bad method", zap.String("method", req.Method))
+		res.WriteHeader(http.StatusMethodNotAllowed)
+		return
 	}
-	return newMetricsFn
+	// десериализуем запрос в структуру модели
+	logger.Log.Debug("decoding request")
+	var jsonMetrics models.Metrics
+	dec := json.NewDecoder(req.Body)
+	if err := dec.Decode(&jsonMetrics); err != nil {
+		logger.Log.Debug("cannot decode request JSON body", zap.Error(err))
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	// заполняем модель ответа
+	switch strings.ToLower(jsonMetrics.MType) {
+	case "counter":
+		err := m.Storage.AddCounterValue(jsonMetrics.ID, *jsonMetrics.Delta)
+		if err != nil {
+			logger.Log.Debug("cannot add new counter value")
+			res.WriteHeader(http.StatusNotFound)
+			return
+		}
+		value, ok := m.Storage.GetCounter(jsonMetrics.ID)
+		if !ok {
+			logger.Log.Debug("cannot get counter value")
+			res.WriteHeader(http.StatusNotFound)
+			return
+		}
+		jsonMetrics.Delta = &value
+	case "gauge":
+		err := m.Storage.AddGaugeValue(jsonMetrics.ID, *jsonMetrics.Value)
+		if err != nil {
+			logger.Log.Debug("cannot add new gauge value")
+			res.WriteHeader(http.StatusNotFound)
+			return
+		}
+		value, ok := m.Storage.GetGauge(jsonMetrics.ID)
+		if !ok {
+			logger.Log.Debug("cannot get gauge value")
+			res.WriteHeader(http.StatusNotFound)
+			return
+		}
+		jsonMetrics.Value = &value
+	default:
+		{
+			logger.Log.Debug("could not determine the type of metric")
+			res.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+	response, err := json.Marshal(jsonMetrics)
+	if err != nil {
+		logger.Log.Debug("cannot marshal to json", zap.Error(err))
+		return
+	}
+	res.Header().Add("Content-Type", "application/json")
+	res.WriteHeader(http.StatusOK)
+	res.Write(response)
+
 }
