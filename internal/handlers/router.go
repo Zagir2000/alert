@@ -6,9 +6,9 @@ import (
 )
 
 func Router(newHandStruct *MetricHandler) chi.Router {
-
+	zapNewLogger := logger.NewZapLoggerStruct(newHandStruct.log)
 	r := chi.NewRouter()
-	r.Use(logger.WithLogging)
+	r.Use(zapNewLogger.WithLogging)
 	r.Post("/update/", gzipMiddleware(newHandStruct.NewMetricsToJSON))
 	r.Post("/value/", gzipMiddleware(newHandStruct.AddValueMetricsToJSON))
 	r.Post("/update/{metricType}/{metricName}/{value}", gzipMiddleware(newHandStruct.UpdateNewMetrics))

@@ -48,12 +48,12 @@ func TestRun(t *testing.T) {
 			},
 		},
 	}
-	err := logger.Initialize("info")
+	logger, err := logger.InitializeLogger("info")
 	if err != nil {
 		log.Println(err)
 	}
 	m := storage.NewMemStorage()
-	newHandStruct := handlers.MetricHandlerNew(m)
+	newHandStruct := handlers.MetricHandlerNew(m, logger)
 	ts := httptest.NewServer(handlers.Router(newHandStruct))
 	defer ts.Close()
 

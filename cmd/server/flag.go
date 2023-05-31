@@ -4,9 +4,6 @@ import (
 	"flag"
 	"os"
 	"strconv"
-
-	"github.com/Zagir2000/alert/internal/logger"
-	"go.uber.org/zap"
 )
 
 type FlagVar struct {
@@ -23,7 +20,7 @@ func NewFlagVarStruct() *FlagVar {
 
 // parseFlags обрабатывает аргументы командной строки
 // и сохраняет их значения в соответствующих переменных
-func (f *FlagVar) parseFlags() {
+func (f *FlagVar) parseFlags() error {
 	// регистрируем переменную flagRunAddr
 	// как аргумент -a со значением :8080 по умолчанию
 	flag.StringVar(&f.runAddr, "a", ":8080", "address and port to run server")
@@ -43,7 +40,7 @@ func (f *FlagVar) parseFlags() {
 	if envStoreIntervallInt := os.Getenv("STORE_INTERVAL"); envStoreIntervallInt != "" {
 		storeIntervallInt, err := strconv.Atoi(envStoreIntervallInt)
 		if err != nil {
-			logger.Log.Warn("wrong STORE_INTERVAL format: is not a integer", zap.Error(err))
+			return err
 		}
 		f.storeIntervall = storeIntervallInt
 	}
@@ -54,8 +51,9 @@ func (f *FlagVar) parseFlags() {
 	if envRestore := os.Getenv("RESTORE"); envRestore != "" {
 		restoreBool, err := strconv.ParseBool(envRestore)
 		if err != nil {
-			logger.Log.Warn("wrong STORE_INTERVAL format: is not a integer", zap.Error(err))
+			return err
 		}
 		f.restore = restoreBool
 	}
+	return nil
 }

@@ -9,8 +9,10 @@ import (
 
 func main() {
 	flag := NewFlagVarStruct()
-	flag.parseFlags()
-
+	err := flag.parseFlags()
+	if err != nil {
+		log.Fatal(err)
+	}
 	Metric := metricscollect.IntervalPin(flag.pollInterval, flag.reportInterval)
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)

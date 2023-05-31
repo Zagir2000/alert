@@ -8,22 +8,26 @@ import (
 )
 
 var sugar zap.SugaredLogger
-var Log *zap.Logger = zap.NewNop()
 
-type (
-	// берём структуру для хранения сведений об ответе
-	responseData struct {
-		status int
-		size   int
-	}
+type loggerZap struct {
+	logger *zap.Logger
+}
 
-	// добавляем реализацию http.ResponseWriter
-	loggingResponseWriter struct {
-		http.ResponseWriter // встраиваем оригинальный http.ResponseWriter
-		responseData        *responseData
-	}
-)
+// берём структуру для хранения сведений об ответе
+type responseData struct {
+	status int
+	size   int
+}
 
+// добавляем реализацию http.ResponseWriter
+type loggingResponseWriter struct {
+	http.ResponseWriter // встраиваем оригинальный http.ResponseWriter
+	responseData        *responseData
+}
+
+func NewZapLoggerStruct(loggerZapVar *zap.Logger) *loggerZap {
+	return &loggerZap{logger: loggerZapVar}
+}
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
 	// записываем ответ, используя оригинальный http.ResponseWriter
 	size, err := r.ResponseWriter.Write(b)
@@ -38,37 +42,27 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 }
 
 // Initialize инициализирует синглтон логера с необходимым уровнем логирования.
-func Initialize(level string) error {
+func InitializeLogger(level string) (*zap.Logger, error) {
 	// преобразуем текстовый уровень логирования в zap.AtomicLevel
 	lvl, err := zap.ParseAtomicLevel(level)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// создаём новую конфигурацию логера
 	cfg := zap.NewProductionConfig()
 	// устанавливаем уровень
 	cfg.Level = lvl
 	// создаём логер на основе конфигурации
-	zl, err := cfg.Build()
+	zl := zap.Must(cfg.Build())
 	if err != nil {
-		return err
+		return nil, err
 	}
+	defer zl.Sync()
 	// устанавливаем синглтон
-	Log = zl
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		// вызываем панику, если ошибка
-		panic(err)
-	}
-	defer logger.Sync()
-
-	// делаем регистратор SugaredLogger
-	sugar = *logger.Sugar()
-
-	return nil
+	return zl, nil
 }
 
-func WithLogging(h http.Handler) http.Handler {
+func (zapLog *loggerZap) WithLogging(h http.Handler) http.Handler {
 	logFn := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
@@ -84,7 +78,7 @@ func WithLogging(h http.Handler) http.Handler {
 
 		duration := time.Since(start)
 
-		sugar.Infoln(
+		zapLog.logger.Sugar().Infoln(
 			"uri", r.RequestURI,
 			"method", r.Method,
 			"status", responseData.status, // получаем перехваченный код статуса ответа

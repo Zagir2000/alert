@@ -56,12 +56,12 @@ func TestMetricHandler_MainPage(t *testing.T) {
 			},
 		},
 	}
-	err := logger.Initialize("info")
+	logger, err := logger.InitializeLogger("info")
 	if err != nil {
 		log.Println(err)
 	}
 	memStorage := storage.NewMemStorage()
-	newHandStruct := MetricHandlerNew(memStorage)
+	newHandStruct := MetricHandlerNew(memStorage, logger)
 	r := Router(newHandStruct)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

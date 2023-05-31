@@ -21,7 +21,7 @@ func main() {
 }
 func run(flagStruct *FlagVar) error {
 
-	err := logger.Initialize(flagStruct.logLevel)
+	log, err := logger.InitializeLogger(flagStruct.logLevel)
 	if err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func run(flagStruct *FlagVar) error {
 	if flagStruct.restore {
 		err := memStorage.MetricsLoadJSON(flagStruct.fileStoragePath)
 		if err != nil {
-			logger.Log.Error("failed to load file", zap.Error(err))
+			log.Error("failed to load file", zap.Error(err))
 		}
 		ctx := context.Background()
 		ctx, cancel := context.WithCancel(ctx)
@@ -41,7 +41,7 @@ func run(flagStruct *FlagVar) error {
 				for {
 					err = storage.MetricsSaveJSON(flagStruct.fileStoragePath, memStorage)
 					if err != nil {
-						logger.Log.Error("failed to save file", zap.Error(err))
+						log.Error("failed to save file", zap.Error(err))
 						cancel()
 					}
 					time.Sleep(time.Duration(flagStruct.storeIntervall) * time.Second)
@@ -51,7 +51,7 @@ func run(flagStruct *FlagVar) error {
 
 	}
 
-	newHandStruct := handlers.MetricHandlerNew(memStorage)
+	newHandStruct := handlers.MetricHandlerNew(memStorage, log)
 	router := handlers.Router(newHandStruct)
 	// logger.Log.Info("Running server on", zap.String(flagStruct.runAddr))
 	return http.ListenAndServe(flagStruct.runAddr, router)
