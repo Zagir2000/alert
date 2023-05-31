@@ -40,6 +40,9 @@ func (m *memStorage) AddCounterValue(name string, value int64) error {
 		return errors.New("counter cannot decrease in value")
 	}
 	m.Counterdata[name] += value
+	if m.Counterdata[name] == 0 && value != 0 {
+		return errors.New("counter is overflow")
+	}
 	_, ok := m.Counterdata[name]
 	if !ok {
 		return errors.New("failed to add counter value")

@@ -67,16 +67,14 @@ func MetricsSaveJSON(fname string, m *memStorage) error {
 	}
 	defer producer.Close()
 	// сохраняем данные в файл
-
-	metricsForFile := &memStorage{
-		Gaugedata:   m.GetAllGaugeValues(),
-		Counterdata: m.GetAllCounterValues(),
-	}
-	err = producer.WriteMetrics(metricsForFile)
+	allMetrics := NewMemStorage()
+	allMetrics.Gaugedata = m.GetAllGaugeValues()
+	allMetrics.Counterdata = m.GetAllCounterValues()
+	err = producer.WriteMetrics(allMetrics)
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 
 func (m *memStorage) MetricsLoadJSON(fname string) error {
