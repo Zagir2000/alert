@@ -54,9 +54,6 @@ func InitializeLogger(level string) (*zap.Logger, error) {
 	cfg.Level = lvl
 	// создаём логер на основе конфигурации
 	zl := zap.Must(cfg.Build())
-	if err != nil {
-		return nil, err
-	}
 	defer zl.Sync()
 	// устанавливаем синглтон
 	return zl, nil
@@ -77,8 +74,8 @@ func (zapLog *loggerZap) WithLogging(h http.Handler) http.Handler {
 		h.ServeHTTP(&lw, r) // внедряем реализацию http.ResponseWriter
 
 		duration := time.Since(start)
-
-		zapLog.logger.Sugar().Infoln(
+		logger := zapLog.logger.Sugar()
+		logger.Infoln(
 			"uri", r.RequestURI,
 			"method", r.Method,
 			"status", responseData.status, // получаем перехваченный код статуса ответа
