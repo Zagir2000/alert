@@ -2,8 +2,6 @@ package storage
 
 import (
 	"errors"
-
-	"github.com/johncgriffin/overflow"
 )
 
 type Repository interface {
@@ -41,17 +39,8 @@ func (m *memStorage) AddCounterValue(name string, value int64) error {
 	if value < 0 {
 		return errors.New("counter cannot decrease in value")
 	}
+	m.Counterdata[name] += value
 	_, ok := m.Counterdata[name]
-	if !ok {
-		m.Counterdata[name] = value
-	}
-	checkCounterInOverflow, ok := overflow.Add64(m.Counterdata[name], value)
-	m.Counterdata[name] = checkCounterInOverflow
-	if ok == false {
-		m.Counterdata[name] = 0
-		return errors.New("counter is overflow")
-	}
-	_, ok = m.Counterdata[name]
 	if !ok {
 		return errors.New("failed to add counter value")
 	}
