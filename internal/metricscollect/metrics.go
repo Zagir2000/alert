@@ -15,6 +15,7 @@ import (
 
 	"github.com/Zagir2000/alert/internal/models"
 	"github.com/go-resty/resty/v2"
+	"github.com/johncgriffin/overflow"
 )
 
 const (
@@ -41,7 +42,7 @@ type SendMetricsError struct {
 }
 
 func IntervalPin(pollIntervalFlag int, reportIntervalFlag int) RuntimeMetrics {
-	return RuntimeMetrics{pollInterval: time.Duration(pollIntervalFlag), reportInterval: time.Duration(reportIntervalFlag), RuntimeMemstats: make(map[string]float64)}
+	return RuntimeMetrics{pollInterval: time.Duration(pollIntervalFlag), reportInterval: time.Duration(reportIntervalFlag), RuntimeMemstats: make(map[string]float64), PollCount: 0, RandomValue: 0}
 }
 
 func (m *RuntimeMetrics) AddValueMetric() error {
@@ -80,7 +81,14 @@ func (m *RuntimeMetrics) AddValueMetric() error {
 	if m.PollCount < 0 {
 		return errors.New("counter is negative number")
 	}
-	m.PollCount += 1
+
+	checkCounterInOverflow, ok := overflow.Add64(m.PollCount, 1)
+
+	if !ok {
+		m.PollCount = 0
+		return errors.New("counter is overflow")
+	}
+	m.PollCount = checkCounterInOverflow
 	m.RuntimeMemstats = mapstats
 	time.Sleep(m.pollInterval * time.Second)
 	return nil
