@@ -45,9 +45,9 @@ func (m *memStorage) AddCounterValue(name string, value int64) error {
 	if !ok {
 		m.Counterdata[name] += value
 	}
-	checkCounterInOverflow, err := overflow.Add64(m.Counterdata[name], value)
+	checkCounterInOverflow, check := overflow.Add64(m.Counterdata[name], value)
 	m.Counterdata[name] = checkCounterInOverflow
-	if err != false {
+	if check == false {
 		m.Counterdata[name] = 0
 		return errors.New("counter is overflow")
 	}
