@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"strconv"
 )
@@ -16,7 +15,7 @@ type FlagVar struct {
 func NewFlagVarStruct() *FlagVar {
 	return &FlagVar{}
 }
-func (f *FlagVar) parseFlags() {
+func (f *FlagVar) parseFlags() error {
 
 	// как аргумент -a со значением :8080 по умолчанию
 	// парсим переданные серверу аргументы в зарегистрированные переменные
@@ -34,15 +33,16 @@ func (f *FlagVar) parseFlags() {
 	if envReportInterval, ok := os.LookupEnv("REPORT_INTERVAL"); ok {
 		envReportIntervalInt, err := strconv.Atoi(envReportInterval)
 		if err != nil {
-			fmt.Println("wrong REPORT_INTERVAL format: is not a integer", err)
+			return err
 		}
 		f.reportInterval = envReportIntervalInt
 	}
 	if envPollInterval, ok := os.LookupEnv("POLL_INTERVAL"); ok {
 		envPollIntervalInt, err := strconv.Atoi(envPollInterval)
 		if err != nil {
-			fmt.Println("wrong POLL_INTERVAL format: is not a integer", err)
+			return err
 		}
 		f.pollInterval = envPollIntervalInt
 	}
+	return nil
 }

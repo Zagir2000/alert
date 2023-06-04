@@ -1,11 +1,14 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Zagir2000/alert/internal/server/handlers"
+	"github.com/Zagir2000/alert/internal/handlers"
+	"github.com/Zagir2000/alert/internal/logger"
+	"github.com/Zagir2000/alert/internal/storage"
 	"github.com/d5/tengo/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,7 +36,7 @@ func TestRun(t *testing.T) {
 			args: "/update/counter/metric/b",
 			want: want{
 				code:        400,
-				contentType: "",
+				contentType: "application/x-gzip",
 			},
 		},
 		{
@@ -45,7 +48,13 @@ func TestRun(t *testing.T) {
 			},
 		},
 	}
-	ts := httptest.NewServer(handlers.Router())
+	logger, err := logger.InitializeLogger("info")
+	if err != nil {
+		log.Println(err)
+	}
+	m := storage.NewMemStorage()
+	newHandStruct := handlers.MetricHandlerNew(m, logger)
+	ts := httptest.NewServer(handlers.Router(newHandStruct))
 	defer ts.Close()
 
 	for _, test := range tests {

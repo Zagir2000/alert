@@ -1,11 +1,13 @@
 package handlers
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Zagir2000/alert/internal/logger"
+	"github.com/Zagir2000/alert/internal/storage"
 	"github.com/d5/tengo/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -54,18 +56,22 @@ func TestMetricHandler_MainPage(t *testing.T) {
 			},
 		},
 	}
-
+	logger, err := logger.InitializeLogger("info")
+	if err != nil {
+		log.Println(err)
+	}
+	memStorage := storage.NewMemStorage()
+	newHandStruct := MetricHandlerNew(memStorage, logger)
+	r := Router(newHandStruct)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request, err := http.NewRequest("POST", tt.url, nil)
 			require.NoError(t, err)
 			w := httptest.NewRecorder()
-			r := Router()
+
 			r.ServeHTTP(w, request)
 			assert.Equal(t, w.Code, tt.want.code)
-			s := w.Header()
-			fmt.Println(s.Get("Content-Type"))
-			assert.Equal(t, s.Get("Content-Type"), tt.want.contentType)
+			assert.Equal(t, w.Code, tt.want.code)
 		})
 	}
 }

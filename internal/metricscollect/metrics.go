@@ -1,24 +1,30 @@
 package metricscollect
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"math/rand"
 	"runtime"
-	"sort"
 	"strings"
+	"syscall"
 	"time"
 
+	"github.com/Zagir2000/alert/internal/models"
 	"github.com/go-resty/resty/v2"
+	"github.com/johncgriffin/overflow"
 )
 
 const (
 	counterMetric   string = "counter"
 	gaugeMetric     string = "gauge"
-	RandomValueName string = "RandomValue"
-	PollCountName   string = "PollCount"
+	randomValueName string = "RandomValue"
+	pollCountName   string = "PollCount"
+	contentType     string = "application/json"
+	compressType    string = "gzip"
 )
 
 type RuntimeMetrics struct {
@@ -36,9 +42,11 @@ type SendMetricsError struct {
 }
 
 func IntervalPin(pollIntervalFlag int, reportIntervalFlag int) RuntimeMetrics {
-	return RuntimeMetrics{pollInterval: time.Duration(pollIntervalFlag), reportInterval: time.Duration(reportIntervalFlag)}
+	return RuntimeMetrics{pollInterval: time.Duration(pollIntervalFlag), reportInterval: time.Duration(reportIntervalFlag), RuntimeMemstats: make(map[string]float64), PollCount: 0, RandomValue: 0}
 }
+
 func (m *RuntimeMetrics) AddValueMetric() error {
+
 	mapstats := make(map[string]float64)
 	var RtMetrics runtime.MemStats
 	runtime.ReadMemStats(&RtMetrics)
@@ -69,50 +77,94 @@ func (m *RuntimeMetrics) AddValueMetric() error {
 	mapstats["StackSys"] = float64(RtMetrics.StackSys)
 	mapstats["Sys"] = float64(RtMetrics.Sys)
 	mapstats["TotalAlloc"] = float64(RtMetrics.TotalAlloc)
-	m.RandomValue = rand.Float64()
+	m.RandomValue = rand.Float64() * 10000
 	if m.PollCount < 0 {
 		return errors.New("counter is negative number")
 	}
-	m.PollCount += 1
+
+	checkCounterInOverflow, ok := overflow.Add64(m.PollCount, 1)
+
+	if !ok {
+		m.PollCount = 0
+		return errors.New("counter is overflow")
+	}
+	m.PollCount = checkCounterInOverflow
 	m.RuntimeMemstats = mapstats
 	time.Sleep(m.pollInterval * time.Second)
 	return nil
 }
-
-func (m *RuntimeMetrics) URLMetrics(hostpath string) []string {
-	urls := make([]string, 0, len(m.RuntimeMemstats)+2)
-	for i, k := range m.RuntimeMemstats {
-		s := fmt.Sprintf("%f", k)
-		URL := strings.Join([]string{"http:/", hostpath, "update", gaugeMetric, i, s}, "/")
-		urls = append(urls, URL)
+func (m *RuntimeMetrics) jsonMetricsToBytes() [][]byte {
+	var res [][]byte
+	for k, v := range m.RuntimeMemstats {
+		jsonGauage := &models.Metrics{
+			ID:    k,
+			MType: gaugeMetric,
+			Value: &v,
+		}
+		out, err := json.Marshal(jsonGauage)
+		if err != nil {
+			log.Fatal(err)
+		}
+		res = append(res, out)
 	}
-	sort.Strings(urls)
-	s := fmt.Sprintf("%f", m.RandomValue)
+	URLRandomGuage := &models.Metrics{
+		ID:    randomValueName,
+		MType: gaugeMetric,
+		Value: &m.RandomValue,
+	}
 
-	URLRandomGuage := strings.Join([]string{"http:/", hostpath, "update", gaugeMetric, RandomValueName, s}, "/")
-	c := fmt.Sprintf("%d", m.PollCount)
+	out, err := json.Marshal(URLRandomGuage)
+	if err != nil {
+		log.Fatal(err)
+	}
+	res = append(res, out)
 
-	URLCount := strings.Join([]string{"http:/", hostpath, "update", counterMetric, PollCountName, c}, "/")
-	urls = append(urls, URLRandomGuage, URLCount)
-	return urls
+	URLCount := &models.Metrics{
+		ID:    pollCountName,
+		MType: counterMetric,
+		Delta: &m.PollCount,
+	}
+	out, err = json.Marshal(URLCount)
+	if err != nil {
+		log.Fatal(err)
+	}
+	res = append(res, out)
+	return res
 }
-
 func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
 
 	time.Sleep(m.reportInterval * time.Second)
-	metrics := m.URLMetrics(hostpath)
 	client := resty.New()
 	var responseErr SendMetricsError
-	for _, url := range metrics {
-		_, err := client.R().
-			SetError(&responseErr).
-			SetHeader("Content-Type", "text/plain").
-			Post(url)
-
+	url := strings.Join([]string{"http:/", hostpath, "update/"}, "/")
+	for _, k := range m.jsonMetricsToBytes() {
+		res, err := gzipCompress(k)
 		if err != nil {
 			return err
 		}
+		_, err = client.R().
+			SetError(&responseErr).
+			SetHeader("Content-Encoding", compressType).
+			SetHeader("Content-Type", contentType).
+			SetBody(res).
+			Post(url)
+
+		if err != nil {
+
+			if errors.Is(err, syscall.ECONNRESET) && errors.Is(err, syscall.ECONNREFUSED) {
+				_, err := client.R().
+					SetHeader("Content-Type", contentType).
+					SetHeader("Content-Encoding", compressType).
+					SetBody(res).
+					Post(url)
+				if err != nil {
+					return err
+				}
+			}
+
+		}
 	}
+
 	return nil
 }
 
@@ -129,4 +181,22 @@ func (m *RuntimeMetrics) NewСollect(ctx context.Context, cancel context.CancelF
 		}
 
 	}
+}
+
+func gzipCompress(data []byte) ([]byte, error) {
+	var buf bytes.Buffer
+
+	w, err := gzip.NewWriterLevel(&buf, gzip.BestSpeed)
+	if err != nil {
+		return nil, err
+	}
+	_, err = w.Write(data)
+	if err != nil {
+		return nil, err
+	}
+	err = w.Close()
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), err
 }

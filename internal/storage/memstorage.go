@@ -5,12 +5,13 @@ import (
 )
 
 type Repository interface {
-	AddGaugeValue(name string, value float64)
+	AddGaugeValue(name string, value float64) error
 	AddCounterValue(name string, value int64) error
 	GetGauge(name string) (float64, bool)
 	GetCounter(name string) (int64, bool)
 	GetAllGaugeValues() map[string]float64
 	GetAllCounterValues() map[string]int64
+	LoadMetricsJSON(metricGaugeFile *memStorage)
 }
 
 type memStorage struct {
@@ -25,8 +26,13 @@ func NewMemStorage() *memStorage {
 	}
 }
 
-func (m *memStorage) AddGaugeValue(name string, value float64) {
+func (m *memStorage) AddGaugeValue(name string, value float64) error {
 	m.Gaugedata[name] = value
+	valuenew, ok := m.Gaugedata[name]
+	if !ok && value == valuenew {
+		return errors.New("failed to add gauge value")
+	}
+	return nil
 }
 
 func (m *memStorage) AddCounterValue(name string, value int64) error {
@@ -34,6 +40,13 @@ func (m *memStorage) AddCounterValue(name string, value int64) error {
 		return errors.New("counter cannot decrease in value")
 	}
 	m.Counterdata[name] += value
+	if m.Counterdata[name] == 0 && value != 0 {
+		return errors.New("counter is overflow")
+	}
+	_, ok := m.Counterdata[name]
+	if !ok {
+		return errors.New("failed to add counter value")
+	}
 	return nil
 }
 
@@ -53,4 +66,9 @@ func (m *memStorage) GetAllGaugeValues() map[string]float64 {
 
 func (m *memStorage) GetAllCounterValues() map[string]int64 {
 	return m.Counterdata
+}
+
+func (m *memStorage) LoadMetricsJSON(metricsFile *memStorage) {
+	m.Counterdata = metricsFile.Counterdata
+	m.Gaugedata = metricsFile.Gaugedata
 }

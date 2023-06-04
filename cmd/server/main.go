@@ -1,21 +1,58 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
 	"net/http"
+	"time"
 
-	"github.com/Zagir2000/alert/internal/server/handlers"
+	"github.com/Zagir2000/alert/internal/handlers"
+	"github.com/Zagir2000/alert/internal/logger"
+	"github.com/Zagir2000/alert/internal/storage"
+	"go.uber.org/zap"
 )
 
 func main() {
-	parseFlags()
-	if err := run(); err != nil {
+	flagStruct := NewFlagVarStruct()
+	flagStruct.parseFlags()
+	if err := run(flagStruct); err != nil {
 		log.Fatalln(err)
 	}
 }
-func run() error {
-	router := handlers.Router()
-	fmt.Println("Running server on", flagRunAddr)
-	return http.ListenAndServe(flagRunAddr, router)
+func run(flagStruct *FlagVar) error {
+
+	log, err := logger.InitializeLogger(flagStruct.logLevel)
+	if err != nil {
+		return err
+	}
+	memStorage := storage.NewMemStorage()
+	if flagStruct.restore {
+		err := memStorage.MetricsLoadJSON(flagStruct.fileStoragePath)
+		if err != nil {
+			log.Error("failed to load file", zap.Error(err))
+		}
+		ctx := context.Background()
+		ctx, cancel := context.WithCancel(ctx)
+		go func() {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				for {
+					err = storage.MetricsSaveJSON(flagStruct.fileStoragePath, memStorage)
+					if err != nil {
+						log.Error("failed to save file", zap.Error(err))
+						cancel()
+					}
+					time.Sleep(time.Duration(flagStruct.storeIntervall) * time.Second)
+				}
+			}
+		}()
+
+	}
+
+	newHandStruct := handlers.MetricHandlerNew(memStorage, log)
+	router := handlers.Router(newHandStruct)
+	// logger.Log.Info("Running server on", zap.String(flagStruct.runAddr))
+	return http.ListenAndServe(flagStruct.runAddr, router)
 }
