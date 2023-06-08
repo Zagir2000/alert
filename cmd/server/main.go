@@ -25,33 +25,26 @@ func run(flagStruct *FlagVar) error {
 	if err != nil {
 		return err
 	}
-	memStorage := storage.NewMemStorage()
-	if flagStruct.restore {
-		err := memStorage.MetricsLoadJSON(flagStruct.fileStoragePath)
-		if err != nil {
-			log.Error("failed to load file", zap.Error(err))
-		}
-		ctx := context.Background()
-		ctx, cancel := context.WithCancel(ctx)
-		go func() {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				for {
-					err = storage.MetricsSaveJSON(flagStruct.fileStoragePath, memStorage)
-					if err != nil {
-						log.Error("failed to save file", zap.Error(err))
-						cancel()
-					}
-					time.Sleep(time.Duration(flagStruct.storeIntervall) * time.Second)
+	memStorage, posgresDb := storage.MetricHandler(flagStruct.fileStoragePath, flagStruct.restore, flagStruct.storeIntervall, log, flagStruct.databaseDsn)
+	defer posgresDb.Close()
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	go func() {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			for {
+				err = storage.MetricsSaveJSON(flagStruct.fileStoragePath, memStorage)
+				if err != nil {
+					log.Error("failed to save file", zap.Error(err))
+					cancel()
 				}
+				time.Sleep(time.Duration(flagStruct.storeIntervall) * time.Second)
 			}
-		}()
-
-	}
-
-	newHandStruct := handlers.MetricHandlerNew(memStorage, log)
+		}
+	}()
+	newHandStruct := handlers.MetricHandlerNew(memStorage, log, posgresDb)
 	router := handlers.Router(newHandStruct)
 	// logger.Log.Info("Running server on", zap.String(flagStruct.runAddr))
 	return http.ListenAndServe(flagStruct.runAddr, router)

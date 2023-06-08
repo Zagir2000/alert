@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Zagir2000/alert/internal/models"
 	"github.com/Zagir2000/alert/internal/storage"
@@ -16,11 +18,16 @@ import (
 
 type MetricHandler struct {
 	Storage storage.Repository
+	pgDb    *storage.PostgresDB
 	log     *zap.Logger
 }
 
-func MetricHandlerNew(s storage.Repository, logger *zap.Logger) *MetricHandler {
-	return &MetricHandler{Storage: s, log: logger}
+func MetricHandlerNew(s storage.Repository, logger *zap.Logger, pgDb *storage.PostgresDB) *MetricHandler {
+	return &MetricHandler{
+		Storage: s,
+		pgDb:    pgDb,
+		log:     logger,
+	}
 }
 
 func (m *MetricHandler) GetAllMetrics(res http.ResponseWriter, req *http.Request) {
@@ -245,4 +252,22 @@ func (m *MetricHandler) NewMetricsToJSON(res http.ResponseWriter, req *http.Requ
 	res.WriteHeader(http.StatusOK)
 	res.Write(response)
 
+}
+
+func (m *MetricHandler) PingDbConnect(res http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		m.log.Debug("got request with bad method", zap.String("method", req.Method))
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := m.pgDb.PingDB(ctx); err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+	} else {
+		res.WriteHeader(http.StatusOK)
+	}
+	_, err := res.Write([]byte("pong"))
+	if err != nil {
+		return
+	}
 }

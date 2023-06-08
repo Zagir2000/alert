@@ -12,6 +12,7 @@ type FlagVar struct {
 	storeIntervall  int
 	fileStoragePath string
 	restore         bool
+	databaseDsn     string
 }
 
 func NewFlagVarStruct() *FlagVar {
@@ -28,6 +29,7 @@ func (f *FlagVar) parseFlags() error {
 	flag.IntVar(&f.storeIntervall, "i", 300, "time interval according to which the current server servers are kept on disk")
 	flag.StringVar(&f.fileStoragePath, "f", "/tmp/metrics-db.json", "full name of the file where the current valuee are saved")
 	flag.BoolVar(&f.restore, "r", true, "value specifying whether or not to load previously saved values from the specified file at server startup")
+	flag.StringVar(&f.databaseDsn, "d", "", "connection to databse")
 
 	// парсим переданные серверу аргументы в зарегистрированные переменные
 	flag.Parse()
@@ -55,5 +57,9 @@ func (f *FlagVar) parseFlags() error {
 		}
 		f.restore = restoreBool
 	}
+	if envDatabaseDsn := os.Getenv("DATABASE_DSN"); envDatabaseDsn != "" {
+		f.databaseDsn = envDatabaseDsn
+	}
+
 	return nil
 }

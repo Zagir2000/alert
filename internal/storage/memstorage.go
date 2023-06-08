@@ -2,21 +2,14 @@ package storage
 
 import (
 	"errors"
-)
 
-type Repository interface {
-	AddGaugeValue(name string, value float64) error
-	AddCounterValue(name string, value int64) error
-	GetGauge(name string) (float64, bool)
-	GetCounter(name string) (int64, bool)
-	GetAllGaugeValues() map[string]float64
-	GetAllCounterValues() map[string]int64
-	LoadMetricsJSON(metricGaugeFile *memStorage)
-}
+	"go.uber.org/zap"
+)
 
 type memStorage struct {
 	Gaugedata   map[string]float64
 	Counterdata map[string]int64
+	log         *zap.Logger
 }
 
 func NewMemStorage() *memStorage {

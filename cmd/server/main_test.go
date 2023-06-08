@@ -53,7 +53,7 @@ func TestRun(t *testing.T) {
 		log.Println(err)
 	}
 	m := storage.NewMemStorage()
-	newHandStruct := handlers.MetricHandlerNew(m, logger)
+	newHandStruct := handlers.MetricHandlerNew(m, logger, nil)
 	ts := httptest.NewServer(handlers.Router(newHandStruct))
 	defer ts.Close()
 
