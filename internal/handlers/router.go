@@ -14,6 +14,6 @@ func Router(newHandStruct *MetricHandler) chi.Router {
 	r.Post("/update/{metricType}/{metricName}/{value}", gzipMiddleware(newHandStruct.UpdateNewMetrics))
 	r.Get("/", gzipMiddleware(newHandStruct.GetAllMetrics))
 	r.Get("/value/{metricType}/{metricName}", gzipMiddleware(newHandStruct.GetNowValueMetrics))
-	r.Get("/ping", gzipMiddleware(newHandStruct.PingDbConnect))
+	r.Get("/ping", gzipMiddleware(newHandStruct.PingDBConnect))
 	return r
 }

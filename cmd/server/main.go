@@ -25,8 +25,8 @@ func run(flagStruct *FlagVar) error {
 	if err != nil {
 		return err
 	}
-	memStorage, posgresDb := storage.MetricHandler(flagStruct.fileStoragePath, flagStruct.restore, flagStruct.storeIntervall, log, flagStruct.databaseDsn)
-	defer posgresDb.Close()
+	memStorage, posgresDB := storage.MetricHandler(flagStruct.fileStoragePath, flagStruct.restore, flagStruct.storeIntervall, log, flagStruct.databaseDsn)
+	defer posgresDB.Close()
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
@@ -44,7 +44,7 @@ func run(flagStruct *FlagVar) error {
 			}
 		}
 	}()
-	newHandStruct := handlers.MetricHandlerNew(memStorage, log, posgresDb)
+	newHandStruct := handlers.MetricHandlerNew(memStorage, log, posgresDB)
 	router := handlers.Router(newHandStruct)
 	// logger.Log.Info("Running server on", zap.String(flagStruct.runAddr))
 	return http.ListenAndServe(flagStruct.runAddr, router)

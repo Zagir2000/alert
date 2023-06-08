@@ -16,8 +16,8 @@ type Repository interface {
 
 func MetricHandler(fileStoragePath string, restore bool, storeInterval int, log *zap.Logger, postgresDSN string) (Repository, *PostgresDB) {
 	if postgresDSN != "" {
-		Db := InitDB(postgresDSN, log)
-		return Db, Db
+		DB := InitDB(postgresDSN, log)
+		return DB, DB
 	}
 
 	if restore {

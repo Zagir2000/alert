@@ -24,8 +24,8 @@ func (pgdb *PostgresDB) PingDB(ctx context.Context) error {
 	err := pgdb.db.PingContext(ctx)
 	return err
 }
-func InitDB(configDb string, log *zap.Logger) *PostgresDB {
-	db, err := sql.Open("pgx", configDb)
+func InitDB(configDB string, log *zap.Logger) *PostgresDB {
+	db, err := sql.Open("pgx", configDB)
 	if err != nil {
 		log.Error("Database initialization error")
 		return nil
