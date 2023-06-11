@@ -4,24 +4,30 @@ import (
 	"context"
 	"time"
 
+	"github.com/Zagir2000/alert/internal/models"
 	"go.uber.org/zap"
 )
 
 type Repository interface {
-	AddGaugeValue(name string, value float64) error
-	AddCounterValue(name string, value int64) error
-	GetGauge(name string) (float64, bool)
-	GetCounter(name string) (int64, bool)
-	GetAllGaugeValues() map[string]float64
-	GetAllCounterValues() map[string]int64
+	AddGaugeValue(ctx context.Context, name string, value float64) error
+	AddCounterValue(ctx context.Context, name string, value int64) error
+	GetGauge(ctx context.Context, name string) (float64, bool)
+	GetCounter(ctx context.Context, name string) (int64, bool)
+	GetAllGaugeValues(ctx context.Context) map[string]float64
+	GetAllCounterValues(ctx context.Context) map[string]int64
+	AddAllValue(ctx context.Context, metrics []models.Metrics) error
 }
 
-func NewStorage(log *zap.Logger, fileStoragePath string, restore bool, storeIntervall int, postgresDSN string) (Repository, *PostgresDB) {
+func NewStorage(ctx context.Context, log *zap.Logger, fileStoragePath string, restore bool, storeIntervall int, postgresDSN string) (Repository, *PostgresDB, error) {
 	if postgresDSN != "" {
 		DB := InitDB(postgresDSN, log)
-		DB.CreateTabel(context.Background())
+		err := DB.CreateTabel(ctx)
+		if err != nil {
 
-		return DB, DB
+			log.Error("Error in create db", zap.Error(err))
+			return nil, nil, err
+		}
+		return DB, DB, nil
 	}
 
 	if restore {
@@ -29,6 +35,7 @@ func NewStorage(log *zap.Logger, fileStoragePath string, restore bool, storeInte
 		err := MetricsLoadJSON(fileStoragePath, memStorage)
 		if err != nil {
 			log.Error("failed to load file", zap.Error(err))
+			return nil, nil, err
 		}
 		ctx := context.Background()
 		ctx, cancel := context.WithCancel(ctx)
@@ -47,7 +54,7 @@ func NewStorage(log *zap.Logger, fileStoragePath string, restore bool, storeInte
 				}
 			}
 		}()
-		return memStorage, nil
+		return memStorage, nil, nil
 	}
-	return NewMemStorage(), nil
+	return NewMemStorage(), nil, nil
 }

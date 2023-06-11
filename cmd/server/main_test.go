@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -54,7 +55,7 @@ func TestRun(t *testing.T) {
 	}
 	m := storage.NewMemStorage()
 	newHandStruct := handlers.MetricHandlerNew(m, logger, nil)
-	ts := httptest.NewServer(handlers.Router(newHandStruct))
+	ts := httptest.NewServer(handlers.Router(context.Background(), newHandStruct))
 	defer ts.Close()
 
 	for _, test := range tests {

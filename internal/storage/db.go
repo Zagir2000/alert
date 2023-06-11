@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/Zagir2000/alert/internal/models"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 )
@@ -42,30 +43,53 @@ func (pgdb *PostgresDB) Close() {
 }
 
 func (pgdb *PostgresDB) CreateTabel(ctx context.Context) error {
-	_, err := pgdb.db.ExecContext(ctx, query)
+	tx, err := pgdb.db.Begin()
 	if err != nil {
-		pgdb.log.Error("Error opening database connection: %v", zap.Error(err))
 		return err
 	}
-	pgdb.log.Info("Table metrics created successfully")
-	return nil
+	_, err = tx.ExecContext(ctx, query)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
-func (pgdb *PostgresDB) AddGaugeValue(name string, value float64) error {
-	_, err := pgdb.db.ExecContext(context.Background(),
+func (pgdb *PostgresDB) AddGaugeValue(ctx context.Context, name string, value float64) error {
+	tx, err := pgdb.db.Begin()
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx,
 		`INSERT INTO metrics (ID,MTYPE,VALUE) VALUES ($1, $2, $3);`, name, "gauge", value)
-	return err
+	_, err = tx.ExecContext(ctx, query)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
-func (pgdb *PostgresDB) AddCounterValue(name string, value int64) error {
-	_, err := pgdb.db.ExecContext(context.Background(),
+func (pgdb *PostgresDB) AddCounterValue(ctx context.Context, name string, value int64) error {
+	tx, err := pgdb.db.Begin()
+	if err != nil {
+		return err
+	}
+	_, err = tx.ExecContext(ctx,
 		`INSERT INTO metrics (ID,MTYPE,DELTA) VALUES ($1, $2, $3);`, name, "counter", value)
-	return err
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
 
-func (pgdb *PostgresDB) GetGauge(name string) (float64, bool) {
+func (pgdb *PostgresDB) GetGauge(ctx context.Context, name string) (float64, bool) {
 	var value float64
-	row := pgdb.db.QueryRowContext(context.Background(),
+	row := pgdb.db.QueryRowContext(ctx,
 		"SELECT metrics.VALUE  FROM metrics WHERE metrics.ID=$1", name)
 
 	err := row.Scan(&value)
@@ -76,9 +100,9 @@ func (pgdb *PostgresDB) GetGauge(name string) (float64, bool) {
 	return value, true
 }
 
-func (pgdb *PostgresDB) GetCounter(name string) (int64, bool) {
+func (pgdb *PostgresDB) GetCounter(ctx context.Context, name string) (int64, bool) {
 	var value int64
-	row := pgdb.db.QueryRowContext(context.Background(),
+	row := pgdb.db.QueryRowContext(ctx,
 		"SELECT metrics.DELTA  FROM metrics WHERE metrics.ID=$1", name)
 	err := row.Scan(&value)
 	if err != nil {
@@ -88,12 +112,12 @@ func (pgdb *PostgresDB) GetCounter(name string) (int64, bool) {
 	return value, true
 }
 
-func (pgdb *PostgresDB) GetAllGaugeValues() map[string]float64 {
+func (pgdb *PostgresDB) GetAllGaugeValues(ctx context.Context) map[string]float64 {
 	gaugeMetrics := make(map[string]float64)
 	var nameValue string
 	var value float64
 	queryName := `SELECT ID,VALUE FROM metrics WHERE VALUE IS NOT NULL;`
-	row, err := pgdb.db.QueryContext(context.Background(),
+	row, err := pgdb.db.QueryContext(ctx,
 		queryName)
 	lasterr := row.Err()
 	if lasterr != nil {
@@ -115,12 +139,12 @@ func (pgdb *PostgresDB) GetAllGaugeValues() map[string]float64 {
 	return gaugeMetrics
 }
 
-func (pgdb *PostgresDB) GetAllCounterValues() map[string]int64 {
+func (pgdb *PostgresDB) GetAllCounterValues(ctx context.Context) map[string]int64 {
 	counterMetrics := make(map[string]int64)
 	var nameValue string
 	var value int64
 	queryName := `SELECT ID,DELTA FROM metrics WHERE DELTA IS NOT NULL;`
-	row, err := pgdb.db.QueryContext(context.Background(),
+	row, err := pgdb.db.QueryContext(ctx,
 		queryName)
 	lasterr := row.Err()
 	if lasterr != nil {
@@ -140,4 +164,33 @@ func (pgdb *PostgresDB) GetAllCounterValues() map[string]int64 {
 		counterMetrics[nameValue] = value
 	}
 	return counterMetrics
+}
+
+func (pgdb *PostgresDB) AddAllValue(ctx context.Context, metrics []models.Metrics) error {
+	tx, err := pgdb.db.Begin()
+	if err != nil {
+		return err
+	}
+	for _, v := range metrics {
+		// все изменения записываются в транзакцию
+		if v.MType != "gauge" {
+			_, err = tx.ExecContext(ctx,
+				`INSERT INTO metrics (ID,MTYPE,VALUE) VALUES ($1, $2, $3);`, v.ID, "gauge", v.Value)
+			if err != nil {
+				// если ошибка, то откатываем изменения
+				tx.Rollback()
+				return err
+			}
+		} else {
+			_, err = tx.ExecContext(ctx,
+				`INSERT INTO metrics (ID,MTYPE,VALUE) VALUES ($1, $2, $3);`, v.ID, "counter", v.Delta)
+			if err != nil {
+				// если ошибка, то откатываем изменения
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+
+	return tx.Commit()
 }

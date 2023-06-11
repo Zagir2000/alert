@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 
 	"github.com/Zagir2000/alert/internal/handlers"
 	"github.com/Zagir2000/alert/internal/logger"
 	"github.com/Zagir2000/alert/internal/storage"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -23,11 +25,15 @@ func run(flagStruct *FlagVar) error {
 	if err != nil {
 		return err
 	}
-	memStorageInterface, posgresDB := storage.NewStorage(log, flagStruct.fileStoragePath, flagStruct.restore, flagStruct.storeIntervall, flagStruct.databaseDsn)
-	defer posgresDB.Close()
+	ctx := context.Background()
+	memStorageInterface, postgresDB, err := storage.NewStorage(ctx, log, flagStruct.fileStoragePath, flagStruct.restore, flagStruct.storeIntervall, flagStruct.databaseDsn)
+	if err != nil {
+		log.Fatal("Error in create storage", zap.Error(err))
+	}
+	defer postgresDB.Close()
 
-	newHandStruct := handlers.MetricHandlerNew(memStorageInterface, log, posgresDB)
-	router := handlers.Router(newHandStruct)
+	newHandStruct := handlers.MetricHandlerNew(memStorageInterface, log, postgresDB)
+	router := handlers.Router(ctx, newHandStruct)
 	// logger.Log.Info("Running server on", zap.String(flagStruct.runAddr))
 	return http.ListenAndServe(flagStruct.runAddr, router)
 }

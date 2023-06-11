@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -62,7 +63,7 @@ func TestMetricHandler_MainPage(t *testing.T) {
 	}
 	memStorage := storage.NewMemStorage()
 	newHandStruct := MetricHandlerNew(memStorage, logger, nil)
-	r := Router(newHandStruct)
+	r := Router(context.Background(), newHandStruct)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request, err := http.NewRequest("POST", tt.url, nil)

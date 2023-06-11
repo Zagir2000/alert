@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 )
@@ -68,8 +69,8 @@ func MetricsSaveJSON(fname string, m *memStorage) error {
 	defer producer.Close()
 	// сохраняем данные в файл
 	allMetrics := NewMemStorage()
-	allMetrics.Gaugedata = m.GetAllGaugeValues()
-	allMetrics.Counterdata = m.GetAllCounterValues()
+	allMetrics.Gaugedata = m.GetAllGaugeValues(context.Background())
+	allMetrics.Counterdata = m.GetAllCounterValues(context.Background())
 	err = producer.WriteMetrics(allMetrics)
 	if err != nil {
 		return err
