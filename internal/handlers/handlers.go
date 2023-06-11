@@ -16,21 +16,21 @@ import (
 	"go.uber.org/zap"
 )
 
-type MetricHandler struct {
+type MetricHandlerDB struct {
 	Storage storage.Repository
 	pgDB    *storage.PostgresDB
 	log     *zap.Logger
 }
 
-func MetricHandlerNew(s storage.Repository, logger *zap.Logger, pgDB *storage.PostgresDB) *MetricHandler {
-	return &MetricHandler{
+func MetricHandlerNew(s storage.Repository, logger *zap.Logger, pgDB *storage.PostgresDB) *MetricHandlerDB {
+	return &MetricHandlerDB{
 		Storage: s,
 		pgDB:    pgDB,
 		log:     logger,
 	}
 }
 
-func (m *MetricHandler) GetAllMetrics(res http.ResponseWriter, req *http.Request) {
+func (m *MetricHandlerDB) GetAllMetrics(res http.ResponseWriter, req *http.Request) {
 
 	if req.Method != http.MethodGet {
 		m.log.Debug("got request with bad method", zap.String("method", req.Method))
@@ -57,7 +57,7 @@ func (m *MetricHandler) GetAllMetrics(res http.ResponseWriter, req *http.Request
 
 }
 
-func (m *MetricHandler) GetNowValueMetrics(res http.ResponseWriter, req *http.Request) {
+func (m *MetricHandlerDB) GetNowValueMetrics(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		m.log.Debug("got request with bad method", zap.String("method", req.Method))
 		res.WriteHeader(http.StatusMethodNotAllowed)
@@ -91,7 +91,7 @@ func (m *MetricHandler) GetNowValueMetrics(res http.ResponseWriter, req *http.Re
 	res.WriteHeader(http.StatusOK)
 }
 
-func (m *MetricHandler) UpdateNewMetrics(res http.ResponseWriter, req *http.Request) {
+func (m *MetricHandlerDB) UpdateNewMetrics(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		m.log.Debug("got request with bad method", zap.String("method", req.Method))
 		res.WriteHeader(http.StatusMethodNotAllowed)
@@ -139,7 +139,7 @@ func (m *MetricHandler) UpdateNewMetrics(res http.ResponseWriter, req *http.Requ
 	res.WriteHeader(http.StatusOK)
 }
 
-func (m *MetricHandler) AddValueMetricsToJSON(res http.ResponseWriter, req *http.Request) {
+func (m *MetricHandlerDB) AddValueMetricsToJSON(res http.ResponseWriter, req *http.Request) {
 
 	if req.Method != http.MethodPost {
 		m.log.Debug("got request with bad method", zap.String("method", req.Method))
@@ -190,7 +190,7 @@ func (m *MetricHandler) AddValueMetricsToJSON(res http.ResponseWriter, req *http
 	res.Write(response)
 
 }
-func (m *MetricHandler) NewMetricsToJSON(res http.ResponseWriter, req *http.Request) {
+func (m *MetricHandlerDB) NewMetricsToJSON(res http.ResponseWriter, req *http.Request) {
 
 	if req.Method != http.MethodPost {
 		m.log.Debug("got request with bad method", zap.String("method", req.Method))
@@ -254,7 +254,7 @@ func (m *MetricHandler) NewMetricsToJSON(res http.ResponseWriter, req *http.Requ
 
 }
 
-func (m *MetricHandler) PingDBConnect(res http.ResponseWriter, req *http.Request) {
+func (m *MetricHandlerDB) PingDBConnect(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		m.log.Debug("got request with bad method", zap.String("method", req.Method))
 		return

@@ -60,8 +60,3 @@ func (m *memStorage) GetAllGaugeValues() map[string]float64 {
 func (m *memStorage) GetAllCounterValues() map[string]int64 {
 	return m.Counterdata
 }
-
-func (m *memStorage) LoadMetricsJSON(metricsFile *memStorage) {
-	m.Counterdata = metricsFile.Counterdata
-	m.Gaugedata = metricsFile.Gaugedata
-}

@@ -5,7 +5,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func Router(newHandStruct *MetricHandler) chi.Router {
+func Router(newHandStruct *MetricHandlerDB) chi.Router {
 	zapNewLogger := logger.NewZapLoggerStruct(newHandStruct.log)
 	r := chi.NewRouter()
 	r.Use(zapNewLogger.WithLogging)

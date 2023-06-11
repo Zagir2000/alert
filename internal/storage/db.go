@@ -8,11 +8,11 @@ import (
 	"go.uber.org/zap"
 )
 
-const query = `CREATE TABLE IF NOT EXISTS Metrics (co
-	ID text not null,
-	MTYPE text not null,
-	DELTA bigint,
-	VALUE double precision
+const query = `CREATE TABLE IF NOT EXISTS Metrics (
+	ID TEXT,
+	MTYPE TEXT,
+	DELTA INTEGER,
+	VALUE DOUBLE PRECISION
 	);`
 
 type PostgresDB struct {
@@ -52,29 +52,84 @@ func (session *PostgresDB) CreateTabel(ctx context.Context) error {
 }
 
 func (m *PostgresDB) AddGaugeValue(name string, value float64) error {
-	return nil
+	_, err := m.db.ExecContext(context.Background(),
+		`INSERT INTO metrics (ID,MTYPE,VALUE) VALUES ($1, $2, $3);`, name, "gauge", value)
+	return err
 }
 
 func (m *PostgresDB) AddCounterValue(name string, value int64) error {
-	return nil
+	_, err := m.db.ExecContext(context.Background(),
+		`INSERT INTO metrics (ID,MTYPE,DELTA) VALUES ($1, $2, $3);`, name, "counter", value)
+	return err
 }
 
 func (m *PostgresDB) GetGauge(name string) (float64, bool) {
-	return 1, true
+	var value float64
+	row := m.db.QueryRowContext(context.Background(),
+		"SELECT metrics.VALUE  FROM metrics WHERE metrics.ID=$1", name)
+
+	err := row.Scan(&value)
+	if err != nil {
+		m.log.Error("Error in get gauage value", zap.Error(err))
+		return 0, false
+	}
+	return value, true
 }
 
 func (m *PostgresDB) GetCounter(name string) (int64, bool) {
-	return 1, true
+	var value int64
+	row := m.db.QueryRowContext(context.Background(),
+		"SELECT metrics.DELTA  FROM metrics WHERE metrics.ID=$1", name)
+	err := row.Scan(&value)
+	if err != nil {
+		m.log.Error("Error in get counter value", zap.Error(err))
+		return 0, false
+	}
+	return value, true
 }
 
 func (m *PostgresDB) GetAllGaugeValues() map[string]float64 {
-	return nil
+	gaugeMetrics := make(map[string]float64)
+	var nameValue string
+	var value float64
+	queryName := `SELECT ID,VALUE FROM metrics WHERE VALUE IS NOT NULL;`
+	row, err := m.db.QueryContext(context.Background(),
+		queryName)
+	if err != nil {
+		m.log.Error("Error in get name and gauage value", zap.Error(err))
+		return nil
+	}
+	defer row.Close()
+	for row.Next() {
+		err := row.Scan(&nameValue, &value)
+		if err != nil {
+			m.log.Error("Error in get gauage value", zap.Error(err))
+			return nil
+		}
+		gaugeMetrics[nameValue] = value
+	}
+	return gaugeMetrics
 }
 
 func (m *PostgresDB) GetAllCounterValues() map[string]int64 {
-	return nil
-}
-
-func (m *PostgresDB) LoadMetricsJSON(metricsFile *memStorage) {
-	return
+	counterMetrics := make(map[string]int64)
+	var nameValue string
+	var value int64
+	queryName := `SELECT ID,DELTA FROM metrics WHERE DELTA IS NOT NULL;`
+	row, err := m.db.QueryContext(context.Background(),
+		queryName)
+	if err != nil {
+		m.log.Error("Error in get name and counter value", zap.Error(err))
+		return nil
+	}
+	defer row.Close()
+	for row.Next() {
+		err := row.Scan(&nameValue, &value)
+		if err != nil {
+			m.log.Error("Error in get counter value", zap.Error(err))
+			return nil
+		}
+		counterMetrics[nameValue] = value
+	}
+	return counterMetrics
 }

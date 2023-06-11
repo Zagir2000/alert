@@ -1,15 +1,12 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/Zagir2000/alert/internal/handlers"
 	"github.com/Zagir2000/alert/internal/logger"
 	"github.com/Zagir2000/alert/internal/storage"
-	"go.uber.org/zap"
 )
 
 func main() {
@@ -19,32 +16,18 @@ func main() {
 		log.Fatalln(err)
 	}
 }
+
 func run(flagStruct *FlagVar) error {
 
 	log, err := logger.InitializeLogger(flagStruct.logLevel)
 	if err != nil {
 		return err
 	}
-	memStorage, posgresDB := storage.MetricHandler(flagStruct.fileStoragePath, flagStruct.restore, flagStruct.storeIntervall, log, flagStruct.databaseDsn)
+	memStorageInterface, posgresDB := storage.NewStorage(log, flagStruct.fileStoragePath, flagStruct.restore, flagStruct.storeIntervall, flagStruct.databaseDsn)
+	posgresDB.GetAllGaugeValues()
 	defer posgresDB.Close()
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	go func() {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			for {
-				err = storage.MetricsSaveJSON(flagStruct.fileStoragePath, memStorage)
-				if err != nil {
-					log.Error("failed to save file", zap.Error(err))
-					cancel()
-				}
-				time.Sleep(time.Duration(flagStruct.storeIntervall) * time.Second)
-			}
-		}
-	}()
-	newHandStruct := handlers.MetricHandlerNew(memStorage, log, posgresDB)
+
+	newHandStruct := handlers.MetricHandlerNew(memStorageInterface, log, posgresDB)
 	router := handlers.Router(newHandStruct)
 	// logger.Log.Info("Running server on", zap.String(flagStruct.runAddr))
 	return http.ListenAndServe(flagStruct.runAddr, router)

@@ -60,7 +60,7 @@ func (p *Producer) Close() error {
 	return p.file.Close()
 }
 
-func MetricsSaveJSON(fname string, m Repository) error {
+func MetricsSaveJSON(fname string, m *memStorage) error {
 	producer, err := NewProducer(fname)
 	if err != nil {
 		return err
@@ -77,7 +77,7 @@ func MetricsSaveJSON(fname string, m Repository) error {
 	return nil
 }
 
-func (m *memStorage) MetricsLoadJSON(fname string) error {
+func MetricsLoadJSON(fname string, m *memStorage) error {
 	if _, err := os.Stat(fname); os.IsNotExist(err) {
 		return nil
 	}
@@ -90,7 +90,8 @@ func (m *memStorage) MetricsLoadJSON(fname string) error {
 	if err != nil {
 		return err
 	}
-	m.LoadMetricsJSON(metricsAll)
+	m.Counterdata = metricsAll.Counterdata
+	m.Gaugedata = metricsAll.Gaugedata
 	// сохраняем данные в файл
 
 	return nil
