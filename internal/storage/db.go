@@ -95,15 +95,19 @@ func (pgdb *PostgresDB) GetAllGaugeValues() map[string]float64 {
 	queryName := `SELECT ID,VALUE FROM metrics WHERE VALUE IS NOT NULL;`
 	row, err := pgdb.db.QueryContext(context.Background(),
 		queryName)
+	lasterr := row.Err()
+	if lasterr != nil {
+		pgdb.log.Error("Last error in get name and gauge value", zap.Error(err))
+	}
 	if err != nil {
-		pgdb.log.Error("Error in get name and gauage value", zap.Error(err))
+		pgdb.log.Error("Error in get name and gauge value", zap.Error(err))
 		return nil
 	}
 	defer row.Close()
 	for row.Next() {
 		err := row.Scan(&nameValue, &value)
 		if err != nil {
-			pgdb.log.Error("Error in get gauage value", zap.Error(err))
+			pgdb.log.Error("Error in get gauge value", zap.Error(err))
 			return nil
 		}
 		gaugeMetrics[nameValue] = value
@@ -118,6 +122,10 @@ func (pgdb *PostgresDB) GetAllCounterValues() map[string]int64 {
 	queryName := `SELECT ID,DELTA FROM metrics WHERE DELTA IS NOT NULL;`
 	row, err := pgdb.db.QueryContext(context.Background(),
 		queryName)
+	lasterr := row.Err()
+	if lasterr != nil {
+		pgdb.log.Error("Last error in get name and counter value", zap.Error(err))
+	}
 	if err != nil {
 		pgdb.log.Error("Error in get name and counter value", zap.Error(err))
 		return nil
