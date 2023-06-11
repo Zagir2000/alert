@@ -63,7 +63,6 @@ func (pgdb *PostgresDB) AddGaugeValue(ctx context.Context, name string, value fl
 	}
 	_, err = tx.ExecContext(ctx,
 		`INSERT INTO metrics (ID,MTYPE,VALUE) VALUES ($1, $2, $3);`, name, "gauge", value)
-	_, err = tx.ExecContext(ctx, query)
 	if err != nil {
 		tx.Rollback()
 		return err
