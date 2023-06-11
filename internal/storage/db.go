@@ -10,7 +10,7 @@ import (
 )
 
 const query = `CREATE TABLE IF NOT EXISTS Metrics (
-	ID TEXT,
+	ID TEXT UNIQUE,
 	MTYPE TEXT,
 	DELTA INTEGER,
 	VALUE DOUBLE PRECISION
@@ -174,7 +174,7 @@ func (pgdb *PostgresDB) AddAllValue(ctx context.Context, metrics []models.Metric
 		// все изменения записываются в транзакцию
 		if v.MType == "gauge" {
 			_, err = tx.ExecContext(ctx,
-				`INSERT INTO metrics (ID,MTYPE,VALUE) VALUES ($1, $2, $3) ON CONFLICT (ID) DO UPDATE SET VALUE = 12,  ;`, v.ID, "gauge", v.Value)
+				`INSERT INTO metrics (ID,MTYPE,VALUE) VALUES ($1, $2, $3) ON CONFLICT (ID) DO UPDATE SET VALUE = $3;`, v.ID, "gauge", v.Value)
 			if err != nil {
 				// если ошибка, то откатываем изменения
 				tx.Rollback()
@@ -182,7 +182,7 @@ func (pgdb *PostgresDB) AddAllValue(ctx context.Context, metrics []models.Metric
 			}
 		} else {
 			_, err = tx.ExecContext(ctx,
-				`INSERT INTO metrics (ID,MTYPE,DELTA) VALUES ($1, $2, $3)  ON CONFLICT (ID) DO UPDATE SET DELTA = DELTA;`, v.ID, "counter", v.Delta)
+				`INSERT INTO metrics (ID,MTYPE,DELTA) VALUES ($1, $2, $3)  ON CONFLICT (ID) DO UPDATE SET DELTA = DELTA+$3;`, v.ID, "counter", v.Delta)
 			if err != nil {
 				// если ошибка, то откатываем изменения
 				tx.Rollback()
