@@ -304,7 +304,7 @@ func (m *MetricHandlerDB) UpdateNewMetricsBatch(ctx context.Context) http.Handle
 		}
 		err := m.Storage.AddAllValue(ctx, metrics)
 		if err != nil {
-			m.log.Error("cannot add new metrics value", zap.Error(err))
+			m.log.Debug("cannot add new metrics value", zap.Error(err))
 			res.WriteHeader(http.StatusNotFound)
 			return
 		}
