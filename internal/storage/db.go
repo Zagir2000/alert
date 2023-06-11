@@ -173,7 +173,7 @@ func (pgdb *PostgresDB) AddAllValue(ctx context.Context, metrics []models.Metric
 	}
 	for _, v := range metrics {
 		// все изменения записываются в транзакцию
-		if v.MType != "gauge" {
+		if v.MType == "gauge" {
 			_, err = tx.ExecContext(ctx,
 				`INSERT INTO metrics (ID,MTYPE,VALUE) VALUES ($1, $2, $3);`, v.ID, "gauge", v.Value)
 			if err != nil {
