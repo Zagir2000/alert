@@ -65,7 +65,7 @@ func (m *memStorage) GetAllCounterValues(ctx context.Context) map[string]int64 {
 func (m *memStorage) AddAllValue(ctx context.Context, metrics []models.Metrics) error {
 	for _, v := range metrics {
 		// все изменения записываются в транзакцию
-		if v.MType != "gauge" {
+		if v.MType == "gauge" {
 			err := m.AddGaugeValue(ctx, v.ID, *v.Value)
 			if err != nil {
 				return err

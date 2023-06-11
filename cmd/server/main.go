@@ -30,7 +30,9 @@ func run(flagStruct *FlagVar) error {
 	if err != nil {
 		log.Fatal("Error in create storage", zap.Error(err))
 	}
-	defer postgresDB.Close()
+	if postgresDB != nil {
+		defer postgresDB.Close()
+	}
 
 	newHandStruct := handlers.MetricHandlerNew(memStorageInterface, log, postgresDB)
 	router := handlers.Router(ctx, newHandStruct)
