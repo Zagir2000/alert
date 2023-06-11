@@ -24,7 +24,6 @@ func run(flagStruct *FlagVar) error {
 		return err
 	}
 	memStorageInterface, posgresDB := storage.NewStorage(log, flagStruct.fileStoragePath, flagStruct.restore, flagStruct.storeIntervall, flagStruct.databaseDsn)
-	posgresDB.GetAllGaugeValues()
 	defer posgresDB.Close()
 
 	newHandStruct := handlers.MetricHandlerNew(memStorageInterface, log, posgresDB)
