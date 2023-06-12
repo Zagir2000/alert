@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Zagir2000/alert/internal/models"
@@ -107,7 +108,8 @@ func (pgdb *PostgresDB) GetGauge(ctx context.Context, name string) (float64, boo
 
 	err := row.Scan(&value)
 	if err != nil {
-		pgdb.log.Error("Error in get gauage value", zap.Error(err))
+		errStr := fmt.Sprintf("Error in get gauge value %s", name)
+		pgdb.log.Error(errStr, zap.Error(err))
 		return 0, false
 	}
 	return value, true
@@ -119,7 +121,8 @@ func (pgdb *PostgresDB) GetCounter(ctx context.Context, name string) (int64, boo
 		"SELECT metrics.DELTA  FROM metrics WHERE metrics.ID=$1", name)
 	err := row.Scan(&value)
 	if err != nil {
-		pgdb.log.Error("Error in get counter value", zap.Error(err))
+		errStr := fmt.Sprintf("Error in get counter value %s", name)
+		pgdb.log.Error(errStr, zap.Error(err))
 		return 0, false
 	}
 	return value, true
