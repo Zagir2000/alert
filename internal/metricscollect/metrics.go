@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -145,7 +144,6 @@ func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
 		if errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, io.EOF) {
 			for _, k := range models.TimeConnect {
 				time.Sleep(k)
-				fmt.Println(k)
 				_, err := client.R().
 					SetHeader("Content-Type", contentType).
 					SetHeader("Content-Encoding", compressType).
