@@ -155,9 +155,10 @@ func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
 					break
 				}
 			}
+			return err
 		}
 	}
-	return err
+	return nil
 }
 
 func (m *RuntimeMetrics) NewСollect(ctx context.Context, cancel context.CancelFunc) {
