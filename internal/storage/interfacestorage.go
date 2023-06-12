@@ -20,8 +20,12 @@ type Repository interface {
 
 func NewStorage(ctx context.Context, log *zap.Logger, fileStoragePath string, restore bool, storeIntervall int, postgresDSN string) (Repository, *PostgresDB, error) {
 	if postgresDSN != "" {
-		DB := InitDB(postgresDSN, log)
-		err := DB.CreateTabel(ctx)
+		DB, err := InitDB(postgresDSN, log)
+		if err != nil {
+			log.Error("Error in initialization db", zap.Error(err))
+			return nil, nil, err
+		}
+		err = DB.CreateTabel(ctx)
 		if err != nil {
 
 			log.Error("Error in create db", zap.Error(err))

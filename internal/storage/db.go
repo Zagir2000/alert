@@ -3,8 +3,12 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"time"
 
 	"github.com/Zagir2000/alert/internal/models"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 )
@@ -25,14 +29,24 @@ func (pgdb *PostgresDB) PingDB(ctx context.Context) error {
 	err := pgdb.db.PingContext(ctx)
 	return err
 }
-func InitDB(configDB string, log *zap.Logger) *PostgresDB {
+func InitDB(configDB string, log *zap.Logger) (*PostgresDB, error) {
 	db, err := sql.Open("pgx", configDB)
-	if err != nil {
-		log.Error("Database initialization error")
-		return nil
-
+	if err == nil {
+		return &PostgresDB{db: db, log: log}, nil
 	}
-	return &PostgresDB{db: db, log: log}
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgerrcode.IsConnectionException(pgErr.Code) {
+		log.Error("Database initialization error", zap.Error(err))
+		for _, k := range models.TimeConnect {
+			time.Sleep(k)
+			db, err := sql.Open("pgx", configDB)
+			if err == nil {
+				log.Info("Successful database connection")
+				return &PostgresDB{db: db, log: log}, nil
+			}
+		}
+	}
+	return nil, err
 }
 
 func (pgdb *PostgresDB) Close() {
