@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"log"
 	"math/rand"
 	"runtime"
@@ -97,10 +96,11 @@ func (m *RuntimeMetrics) AddValueMetric() error {
 func (m *RuntimeMetrics) jsonMetricsToBatch() []byte {
 	var metrics []models.Metrics
 	for k, v := range m.RuntimeMemstats {
+		valueGauge := v
 		jsonGauge := &models.Metrics{
 			ID:    k,
 			MType: gaugeMetric,
-			Value: &v,
+			Value: &valueGauge,
 		}
 		metrics = append(metrics, *jsonGauge)
 	}
@@ -140,21 +140,19 @@ func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
 		SetHeader("Content-Type", contentType).
 		SetBody(res).
 		Post(url)
+
 	if err != nil {
-		if errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, io.EOF) {
-			for _, k := range models.TimeConnect {
-				time.Sleep(k)
-				_, err := client.R().
-					SetHeader("Content-Type", contentType).
-					SetHeader("Content-Encoding", compressType).
-					SetBody(res).
-					Post(url)
-				if err == nil {
-					break
-				}
+		if errors.Is(err, syscall.ECONNRESET) && errors.Is(err, syscall.ECONNREFUSED) {
+			_, err := client.R().
+				SetHeader("Content-Type", contentType).
+				SetHeader("Content-Encoding", compressType).
+				SetBody(res).
+				Post(url)
+			if err != nil {
+				return err
 			}
-			return err
 		}
+
 	}
 	return nil
 }
