@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Zagir2000/alert/internal/logger"
-	"github.com/Zagir2000/alert/internal/storage"
+	"github.com/Zagir2000/alert/internal/server/logger"
+	"github.com/Zagir2000/alert/internal/server/storage"
 	"github.com/d5/tengo/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/Zagir2000/alert/internal/models"
-	"github.com/Zagir2000/alert/internal/storage"
+	"github.com/Zagir2000/alert/internal/server/storage"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )

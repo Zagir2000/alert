@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 
-	"github.com/Zagir2000/alert/internal/logger"
+	"github.com/Zagir2000/alert/internal/server/logger"
 	"github.com/go-chi/chi/v5"
 )
 
