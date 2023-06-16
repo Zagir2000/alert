@@ -16,7 +16,6 @@ import (
 func TestMetricHandler_MainPage(t *testing.T) {
 	type want struct {
 		code        int
-		response    string
 		contentType string
 	}
 	tests := []struct {

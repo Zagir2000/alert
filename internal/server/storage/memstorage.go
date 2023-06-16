@@ -5,13 +5,11 @@ import (
 	"errors"
 
 	"github.com/Zagir2000/alert/internal/models"
-	"go.uber.org/zap"
 )
 
 type memStorage struct {
 	Gaugedata   map[string]float64
 	Counterdata map[string]int64
-	log         *zap.Logger
 }
 
 func NewMemStorage() *memStorage {

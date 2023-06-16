@@ -13,7 +13,10 @@ import (
 
 func main() {
 	flagStruct := NewFlagVarStruct()
-	flagStruct.parseFlags()
+	err := flagStruct.parseFlags()
+	if err != nil {
+		log.Fatal(err)
+	}
 	if err := run(flagStruct); err != nil {
 		log.Fatalln(err)
 	}

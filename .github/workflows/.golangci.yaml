@@ -1,0 +1,5 @@
+issues:
+  exclude:
+    - "Error return value of `tx.Rollback` is not checked"
+    - "Error return value of `res.Write` is not checked"
+    - "Error return value of `zl.Sync` is not checked"

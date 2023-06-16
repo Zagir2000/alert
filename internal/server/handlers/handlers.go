@@ -279,10 +279,6 @@ func (m *MetricHandlerDB) PingDBConnect(ctx context.Context) http.HandlerFunc {
 		} else {
 			res.WriteHeader(http.StatusOK)
 		}
-		_, err := res.Write([]byte("pong"))
-		if err != nil {
-			return
-		}
 	}
 	return pingFn
 }
