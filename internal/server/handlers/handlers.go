@@ -31,7 +31,7 @@ func MetricHandlerNew(s storage.Repository, logger *zap.Logger, pgDB *storage.Po
 }
 
 func (m *MetricHandlerDB) GetAllMetrics(ctx context.Context) http.HandlerFunc {
-	getAllFn := func(res http.ResponseWriter, req *http.Request) {
+	return func(res http.ResponseWriter, req *http.Request) {
 
 		if req.Method != http.MethodGet {
 			m.log.Debug("got request with bad method", zap.String("method", req.Method))
@@ -57,11 +57,11 @@ func (m *MetricHandlerDB) GetAllMetrics(ctx context.Context) http.HandlerFunc {
 		}
 
 	}
-	return getAllFn
+
 }
 
 func (m *MetricHandlerDB) GetNowValueMetrics(ctx context.Context) http.HandlerFunc {
-	getValueFn := func(res http.ResponseWriter, req *http.Request) {
+	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodGet {
 			m.log.Debug("got request with bad method", zap.String("method", req.Method))
 			res.WriteHeader(http.StatusMethodNotAllowed)
@@ -94,11 +94,11 @@ func (m *MetricHandlerDB) GetNowValueMetrics(ctx context.Context) http.HandlerFu
 		}
 		res.WriteHeader(http.StatusOK)
 	}
-	return getValueFn
+
 }
 
 func (m *MetricHandlerDB) UpdateNewMetrics(ctx context.Context) http.HandlerFunc {
-	updateFn := func(res http.ResponseWriter, req *http.Request) {
+	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodPost {
 			m.log.Debug("got request with bad method", zap.String("method", req.Method))
 			res.WriteHeader(http.StatusMethodNotAllowed)
@@ -145,11 +145,10 @@ func (m *MetricHandlerDB) UpdateNewMetrics(ctx context.Context) http.HandlerFunc
 		res.Header().Add("Content-Type", "text/plain; charset=utf-8")
 		res.WriteHeader(http.StatusOK)
 	}
-	return updateFn
 }
 
 func (m *MetricHandlerDB) AddValueMetricsToJSON(ctx context.Context) http.HandlerFunc {
-	addValueFn := func(res http.ResponseWriter, req *http.Request) {
+	return func(res http.ResponseWriter, req *http.Request) {
 
 		if req.Method != http.MethodPost {
 			m.log.Debug("got request with bad method", zap.String("method", req.Method))
@@ -158,7 +157,7 @@ func (m *MetricHandlerDB) AddValueMetricsToJSON(ctx context.Context) http.Handle
 		}
 		// десериализуем запрос в структуру модели
 		m.log.Debug("decoding request")
-		var jsonMetrics models.Metrics
+		jsonMetrics := &models.Metrics{}
 		dec := json.NewDecoder(req.Body)
 		if err := dec.Decode(&jsonMetrics); err != nil {
 			m.log.Debug("cannot decode request JSON body", zap.Error(err))
@@ -199,10 +198,9 @@ func (m *MetricHandlerDB) AddValueMetricsToJSON(ctx context.Context) http.Handle
 		res.WriteHeader(http.StatusOK)
 		res.Write(response)
 	}
-	return addValueFn
 }
 func (m *MetricHandlerDB) NewMetricsToJSON(ctx context.Context) http.HandlerFunc {
-	newMetricsFn := func(res http.ResponseWriter, req *http.Request) {
+	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodPost {
 			m.log.Debug("got request with bad method", zap.String("method", req.Method))
 			res.WriteHeader(http.StatusMethodNotAllowed)
@@ -263,11 +261,10 @@ func (m *MetricHandlerDB) NewMetricsToJSON(ctx context.Context) http.HandlerFunc
 		res.WriteHeader(http.StatusOK)
 		res.Write(response)
 	}
-	return newMetricsFn
 }
 
 func (m *MetricHandlerDB) PingDBConnect(ctx context.Context) http.HandlerFunc {
-	pingFn := func(res http.ResponseWriter, req *http.Request) {
+	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodGet {
 			m.log.Debug("got request with bad method", zap.String("method", req.Method))
 			return
@@ -280,11 +277,10 @@ func (m *MetricHandlerDB) PingDBConnect(ctx context.Context) http.HandlerFunc {
 			res.WriteHeader(http.StatusOK)
 		}
 	}
-	return pingFn
 }
 
 func (m *MetricHandlerDB) UpdateNewMetricsBatch(ctx context.Context) http.HandlerFunc {
-	updateMetricsFn := func(res http.ResponseWriter, req *http.Request) {
+	return func(res http.ResponseWriter, req *http.Request) {
 
 		if req.Method != http.MethodPost {
 			m.log.Debug("got request with bad method", zap.String("method", req.Method))
@@ -307,5 +303,4 @@ func (m *MetricHandlerDB) UpdateNewMetricsBatch(ctx context.Context) http.Handle
 		res.Header().Add("Content-Type", "text/plain; charset=utf-8")
 		res.WriteHeader(http.StatusOK)
 	}
-	return updateMetricsFn
 }

@@ -25,12 +25,6 @@ func NewStorage(ctx context.Context, log *zap.Logger, fileStoragePath string, re
 			log.Error("Error in initialization db", zap.Error(err))
 			return nil, nil, err
 		}
-		err = DB.CreateTabel(ctx)
-		if err != nil {
-
-			log.Error("Error in create db", zap.Error(err))
-			return nil, nil, err
-		}
 		return DB, DB, nil
 	}
 
