@@ -6,7 +6,7 @@ BEGIN
         SELECT 
             * 
         FROM information_schema.tables 
-        WHERE table_name = __metrics
+        WHERE table_name = __metrics  AND table_schema = 'public'
     )
 
     THEN
