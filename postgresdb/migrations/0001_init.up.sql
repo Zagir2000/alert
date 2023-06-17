@@ -6,11 +6,11 @@ BEGIN
         SELECT 
             * 
         FROM information_schema.tables 
-        WHERE table_name = __metrics  AND table_schema = 'public'
+        WHERE table_name =" __metrics"  AND table_schema = 'public'
     )
 
     THEN
-        ALTER TABLE __metrics RENAME TO metrics;
+        ALTER TABLE "__metrics" RENAME TO metrics;
     ELSE
         CREATE TABLE IF NOT EXISTS metrics (
             ID TEXT UNIQUE,
