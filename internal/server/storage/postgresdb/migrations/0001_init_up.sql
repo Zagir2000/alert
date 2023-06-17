@@ -12,7 +12,7 @@ BEGIN
     THEN
         ALTER TABLE __metrics RENAME TO metrics;
     ELSE
-        CREATE TABLE IF NOT EXISTS Metrics (
+        CREATE TABLE IF NOT EXISTS metrics (
             ID TEXT UNIQUE,
             MTYPE TEXT,
             DELTA BIGINT,

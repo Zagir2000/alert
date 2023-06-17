@@ -31,6 +31,7 @@ func (pgdb *PostgresDB) PingDB(ctx context.Context) error {
 }
 
 func InitDB(configDB string, log *zap.Logger) (*PostgresDB, error) {
+	fmt.Println(migrationsDir)
 	err := runMigrations(configDB)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run DB migrations: %w", err)
@@ -55,7 +56,7 @@ func InitDB(configDB string, log *zap.Logger) (*PostgresDB, error) {
 }
 
 func runMigrations(dsn string) error {
-	driver, err := iofs.New(migrationsDir, "migrations")
+	driver, err := iofs.New(migrationsDir, "postgresdb/migrations")
 	if err != nil {
 		return fmt.Errorf("failed to return an iofs driver: %w", err)
 	}
