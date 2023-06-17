@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"embed"
 	"errors"
 	"fmt"
 	"time"
@@ -10,15 +9,14 @@ import (
 	"github.com/Zagir2000/alert/internal/models"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
 
-//go:embed postgresdb/migrations/*.sql
-var migrationsDir embed.FS
+const migratePath = "../postgresdb/migrations"
 
 type PostgresDB struct {
 	pool *pgxpool.Pool
@@ -31,7 +29,6 @@ func (pgdb *PostgresDB) PingDB(ctx context.Context) error {
 }
 
 func InitDB(configDB string, log *zap.Logger) (*PostgresDB, error) {
-	fmt.Println(migrationsDir)
 	err := runMigrations(configDB)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run DB migrations: %w", err)
@@ -56,15 +53,12 @@ func InitDB(configDB string, log *zap.Logger) (*PostgresDB, error) {
 }
 
 func runMigrations(dsn string) error {
-	driver, err := iofs.New(migrationsDir, "postgresdb/migrations")
+
+	m, err := migrate.New(fmt.Sprintf("file://%s", migratePath), dsn)
 	if err != nil {
 		return fmt.Errorf("failed to return an iofs driver: %w", err)
 	}
 
-	m, err := migrate.NewWithSourceInstance("iofs", driver, dsn)
-	if err != nil {
-		return fmt.Errorf("failed to get a new migrate instance: %w", err)
-	}
 	if err := m.Up(); err != nil {
 		if !errors.Is(err, migrate.ErrNoChange) {
 			return fmt.Errorf("failed to apply migrations to the DB: %w", err)
