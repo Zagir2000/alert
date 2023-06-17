@@ -13,10 +13,9 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 )
-
-const migratePath = "../postgresdb/migrations"
 
 type PostgresDB struct {
 	pool *pgxpool.Pool
@@ -28,8 +27,8 @@ func (pgdb *PostgresDB) PingDB(ctx context.Context) error {
 	return err
 }
 
-func InitDB(configDB string, log *zap.Logger) (*PostgresDB, error) {
-	err := runMigrations(configDB)
+func InitDB(configDB string, log *zap.Logger, migratePath string) (*PostgresDB, error) {
+	err := runMigrations(configDB, migratePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run DB migrations: %w", err)
 	}
@@ -52,18 +51,16 @@ func InitDB(configDB string, log *zap.Logger) (*PostgresDB, error) {
 	return nil, fmt.Errorf("failed to create a connection pool: %w", err)
 }
 
-func runMigrations(dsn string) error {
-
+func runMigrations(dsn string, migratePath string) error {
 	m, err := migrate.New(fmt.Sprintf("file://%s", migratePath), dsn)
 	if err != nil {
-		return fmt.Errorf("failed to return an iofs driver: %w", err)
+		return err
 	}
 
-	if err := m.Up(); err != nil {
-		if !errors.Is(err, migrate.ErrNoChange) {
-			return fmt.Errorf("failed to apply migrations to the DB: %w", err)
-		}
+	if err = m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		return err
 	}
+
 	return nil
 }
 

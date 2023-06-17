@@ -13,6 +13,7 @@ type FlagVar struct {
 	fileStoragePath string
 	restore         bool
 	databaseDsn     string
+	migrationsDir   string
 }
 
 func NewFlagVarStruct() *FlagVar {
@@ -24,13 +25,13 @@ func NewFlagVarStruct() *FlagVar {
 func (f *FlagVar) parseFlags() error {
 	// регистрируем переменную flagRunAddr
 	// как аргумент -a со значением :8080 по умолчанию
-
 	flag.StringVar(&f.runAddr, "a", ":8080", "address and port to run server")
 	flag.StringVar(&f.logLevel, "l", "info", "log level")
 	flag.IntVar(&f.storeIntervall, "i", 300, "time interval according to which the current server servers are kept on disk")
 	flag.StringVar(&f.fileStoragePath, "f", "/tmp/metrics-db.json", "full name of the file where the current valuee are saved")
 	flag.BoolVar(&f.restore, "r", true, "value specifying whether or not to load previously saved values from the specified file at server startup")
 	flag.StringVar(&f.databaseDsn, "d", "", "connection to databse")
+	flag.StringVar(&f.migrationsDir, "m", "postgresdb/migrations", "migrations to db")
 
 	// парсим переданные серверу аргументы в зарегистрированные переменные
 	flag.Parse()

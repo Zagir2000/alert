@@ -18,9 +18,9 @@ type Repository interface {
 	AddAllValue(ctx context.Context, metrics []models.Metrics) error
 }
 
-func NewStorage(ctx context.Context, log *zap.Logger, fileStoragePath string, restore bool, storeIntervall int, postgresDSN string) (Repository, *PostgresDB, error) {
+func NewStorage(ctx context.Context, migratePath string, log *zap.Logger, fileStoragePath string, restore bool, storeIntervall int, postgresDSN string) (Repository, *PostgresDB, error) {
 	if postgresDSN != "" {
-		DB, err := InitDB(postgresDSN, log)
+		DB, err := InitDB(postgresDSN, log, migratePath)
 		if err != nil {
 			log.Error("Error in initialization db", zap.Error(err))
 			return nil, nil, err

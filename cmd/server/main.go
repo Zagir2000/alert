@@ -29,7 +29,7 @@ func run(flagStruct *FlagVar) error {
 		return err
 	}
 	ctx := context.Background()
-	memStorageInterface, postgresDB, err := storage.NewStorage(ctx, log, flagStruct.fileStoragePath, flagStruct.restore, flagStruct.storeIntervall, flagStruct.databaseDsn)
+	memStorageInterface, postgresDB, err := storage.NewStorage(ctx, flagStruct.migrationsDir, log, flagStruct.fileStoragePath, flagStruct.restore, flagStruct.storeIntervall, flagStruct.databaseDsn)
 	if err != nil {
 		log.Fatal("Error in create storage", zap.Error(err))
 	}
