@@ -19,22 +19,20 @@ import (
 type MetricHandlerDB struct {
 	Storage storage.Repository
 	pgDB    *storage.PostgresDB
-	log     *zap.Logger
 }
 
-func MetricHandlerNew(s storage.Repository, logger *zap.Logger, pgDB *storage.PostgresDB) *MetricHandlerDB {
+func MetricHandlerNew(s storage.Repository, pgDB *storage.PostgresDB) *MetricHandlerDB {
 	return &MetricHandlerDB{
 		Storage: s,
 		pgDB:    pgDB,
-		log:     logger,
 	}
 }
 
-func (m *MetricHandlerDB) GetAllMetrics(ctx context.Context) http.HandlerFunc {
+func (m *MetricHandlerDB) GetAllMetrics(ctx context.Context, log *zap.Logger) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 
 		if req.Method != http.MethodGet {
-			m.log.Debug("got request with bad method", zap.String("method", req.Method))
+			log.Debug("got request with bad method", zap.String("method", req.Method))
 			res.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
@@ -60,10 +58,10 @@ func (m *MetricHandlerDB) GetAllMetrics(ctx context.Context) http.HandlerFunc {
 
 }
 
-func (m *MetricHandlerDB) GetNowValueMetrics(ctx context.Context) http.HandlerFunc {
+func (m *MetricHandlerDB) GetNowValueMetrics(ctx context.Context, log *zap.Logger) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodGet {
-			m.log.Debug("got request with bad method", zap.String("method", req.Method))
+			log.Debug("got request with bad method", zap.String("method", req.Method))
 			res.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
@@ -87,7 +85,7 @@ func (m *MetricHandlerDB) GetNowValueMetrics(ctx context.Context) http.HandlerFu
 			res.Write([]byte(fmt.Sprintf("%g", value)))
 		default:
 			{
-				m.log.Debug("could not determine the type of metric")
+				log.Debug("could not determine the type of metric")
 				res.WriteHeader(http.StatusBadRequest)
 				return
 			}
@@ -97,10 +95,10 @@ func (m *MetricHandlerDB) GetNowValueMetrics(ctx context.Context) http.HandlerFu
 
 }
 
-func (m *MetricHandlerDB) UpdateNewMetrics(ctx context.Context) http.HandlerFunc {
+func (m *MetricHandlerDB) UpdateNewMetrics(ctx context.Context, log *zap.Logger) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodPost {
-			m.log.Debug("got request with bad method", zap.String("method", req.Method))
+			log.Debug("got request with bad method", zap.String("method", req.Method))
 			res.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
@@ -112,32 +110,32 @@ func (m *MetricHandlerDB) UpdateNewMetrics(ctx context.Context) http.HandlerFunc
 		case "counter":
 			valueint64, err := strconv.ParseInt(value, 10, 64)
 			if err != nil {
-				m.log.Debug("cannot parse to int64", zap.Error(err))
+				log.Debug("cannot parse to int64", zap.Error(err))
 				res.WriteHeader(http.StatusBadRequest)
 				return
 			}
 			err = m.Storage.AddCounterValue(ctx, metricName, valueint64)
 			if err != nil {
-				m.log.Debug("cannot get new counter value", zap.Error(err))
+				log.Debug("cannot get new counter value", zap.Error(err))
 				res.WriteHeader(http.StatusNotFound)
 				return
 			}
 		case "gauge":
 			valuefloat64, err := strconv.ParseFloat(value, 64)
 			if err != nil {
-				m.log.Debug("cannot parse to float64", zap.Error(err))
+				log.Debug("cannot parse to float64", zap.Error(err))
 				res.WriteHeader(http.StatusBadRequest)
 				return
 			}
 			err = m.Storage.AddGaugeValue(ctx, metricName, valuefloat64)
 			if err != nil {
-				m.log.Debug("cannot add new gauge value")
+				log.Debug("cannot add new gauge value")
 				res.WriteHeader(http.StatusNotFound)
 				return
 			}
 		default:
 			{
-				m.log.Debug("could not determine the type of metric")
+				log.Debug("could not determine the type of metric")
 				res.WriteHeader(http.StatusBadRequest)
 				return
 			}
@@ -147,20 +145,20 @@ func (m *MetricHandlerDB) UpdateNewMetrics(ctx context.Context) http.HandlerFunc
 	}
 }
 
-func (m *MetricHandlerDB) AddValueMetricsToJSON(ctx context.Context) http.HandlerFunc {
+func (m *MetricHandlerDB) AddValueMetricsToJSON(ctx context.Context, log *zap.Logger) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 
 		if req.Method != http.MethodPost {
-			m.log.Debug("got request with bad method", zap.String("method", req.Method))
+			log.Debug("got request with bad method", zap.String("method", req.Method))
 			res.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
 		// десериализуем запрос в структуру модели
-		m.log.Debug("decoding request")
+		log.Debug("decoding request")
 		jsonMetrics := &models.Metrics{}
 		dec := json.NewDecoder(req.Body)
 		if err := dec.Decode(&jsonMetrics); err != nil {
-			m.log.Debug("cannot decode request JSON body", zap.Error(err))
+			log.Debug("cannot decode request JSON body", zap.Error(err))
 			res.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -169,7 +167,7 @@ func (m *MetricHandlerDB) AddValueMetricsToJSON(ctx context.Context) http.Handle
 		case "counter":
 			value, ok := m.Storage.GetCounter(ctx, jsonMetrics.ID)
 			if !ok {
-				m.log.Debug("cannot get counter value")
+				log.Debug("cannot get counter value")
 				res.WriteHeader(http.StatusNotFound)
 				return
 			}
@@ -177,21 +175,21 @@ func (m *MetricHandlerDB) AddValueMetricsToJSON(ctx context.Context) http.Handle
 		case "gauge":
 			value, ok := m.Storage.GetGauge(ctx, jsonMetrics.ID)
 			if !ok {
-				m.log.Debug("cannot get gauge value")
+				log.Debug("cannot get gauge value")
 				res.WriteHeader(http.StatusNotFound)
 				return
 			}
 			jsonMetrics.Value = &value
 		default:
 			{
-				m.log.Debug("could not determine the type of metric")
+				log.Debug("could not determine the type of metric")
 				res.WriteHeader(http.StatusBadRequest)
 				return
 			}
 		}
 		response, err := json.Marshal(jsonMetrics)
 		if err != nil {
-			m.log.Debug("cannot marshal to json", zap.Error(err))
+			log.Debug("cannot marshal to json", zap.Error(err))
 
 		}
 		res.Header().Add("Content-Type", "application/json")
@@ -199,19 +197,19 @@ func (m *MetricHandlerDB) AddValueMetricsToJSON(ctx context.Context) http.Handle
 		res.Write(response)
 	}
 }
-func (m *MetricHandlerDB) NewMetricsToJSON(ctx context.Context) http.HandlerFunc {
+func (m *MetricHandlerDB) NewMetricsToJSON(ctx context.Context, log *zap.Logger) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodPost {
-			m.log.Debug("got request with bad method", zap.String("method", req.Method))
+			log.Debug("got request with bad method", zap.String("method", req.Method))
 			res.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
 		// десериализуем запрос в структуру модели
-		m.log.Debug("decoding request")
+		log.Debug("decoding request")
 		var jsonMetrics models.Metrics
 		dec := json.NewDecoder(req.Body)
 		if err := dec.Decode(&jsonMetrics); err != nil {
-			m.log.Debug("cannot decode request JSON body", zap.Error(err))
+			log.Debug("cannot decode request JSON body", zap.Error(err))
 			res.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -220,13 +218,13 @@ func (m *MetricHandlerDB) NewMetricsToJSON(ctx context.Context) http.HandlerFunc
 		case "counter":
 			err := m.Storage.AddCounterValue(ctx, jsonMetrics.ID, *jsonMetrics.Delta)
 			if err != nil {
-				m.log.Debug("cannot add new counter value")
+				log.Debug("cannot add new counter value")
 				res.WriteHeader(http.StatusNotFound)
 				return
 			}
 			value, ok := m.Storage.GetCounter(ctx, jsonMetrics.ID)
 			if !ok {
-				m.log.Debug("cannot get counter value")
+				log.Debug("cannot get counter value")
 				res.WriteHeader(http.StatusNotFound)
 				return
 			}
@@ -234,27 +232,27 @@ func (m *MetricHandlerDB) NewMetricsToJSON(ctx context.Context) http.HandlerFunc
 		case "gauge":
 			err := m.Storage.AddGaugeValue(ctx, jsonMetrics.ID, *jsonMetrics.Value)
 			if err != nil {
-				m.log.Debug("cannot add new gauge value")
+				log.Debug("cannot add new gauge value")
 				res.WriteHeader(http.StatusNotFound)
 				return
 			}
 			value, ok := m.Storage.GetGauge(ctx, jsonMetrics.ID)
 			if !ok {
-				m.log.Debug("cannot get gauge value")
+				log.Debug("cannot get gauge value")
 				res.WriteHeader(http.StatusNotFound)
 				return
 			}
 			jsonMetrics.Value = &value
 		default:
 			{
-				m.log.Debug("could not determine the type of metric")
+				log.Debug("could not determine the type of metric")
 				res.WriteHeader(http.StatusBadRequest)
 				return
 			}
 		}
 		response, err := json.Marshal(jsonMetrics)
 		if err != nil {
-			m.log.Debug("cannot marshal to json", zap.Error(err))
+			log.Debug("cannot marshal to json", zap.Error(err))
 			return
 		}
 		res.Header().Add("Content-Type", "application/json")
@@ -263,15 +261,16 @@ func (m *MetricHandlerDB) NewMetricsToJSON(ctx context.Context) http.HandlerFunc
 	}
 }
 
-func (m *MetricHandlerDB) PingDBConnect(ctx context.Context) http.HandlerFunc {
+func (m *MetricHandlerDB) PingDBConnect(ctx context.Context, log *zap.Logger) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodGet {
-			m.log.Debug("got request with bad method", zap.String("method", req.Method))
+			log.Debug("got request with bad method", zap.String("method", req.Method))
 			return
 		}
 		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
 		if err := m.pgDB.PingDB(ctx); err != nil {
+			log.Debug("error in connection from the Pool", zap.Error(err))
 			res.WriteHeader(http.StatusInternalServerError)
 		} else {
 			res.WriteHeader(http.StatusOK)
@@ -279,24 +278,24 @@ func (m *MetricHandlerDB) PingDBConnect(ctx context.Context) http.HandlerFunc {
 	}
 }
 
-func (m *MetricHandlerDB) UpdateNewMetricsBatch(ctx context.Context) http.HandlerFunc {
+func (m *MetricHandlerDB) UpdateNewMetricsBatch(ctx context.Context, log *zap.Logger) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 
 		if req.Method != http.MethodPost {
-			m.log.Debug("got request with bad method", zap.String("method", req.Method))
+			log.Debug("got request with bad method", zap.String("method", req.Method))
 			res.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
 		var metrics []models.Metrics
 		dec := json.NewDecoder(req.Body)
 		if err := dec.Decode(&metrics); err != nil {
-			m.log.Debug("cannot decode request JSON body", zap.Error(err))
+			log.Debug("cannot decode request JSON body", zap.Error(err))
 			res.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		err := m.Storage.AddAllValue(ctx, metrics)
 		if err != nil {
-			m.log.Debug("cannot add new metrics value", zap.Error(err))
+			log.Debug("cannot add new metrics value", zap.Error(err))
 			res.WriteHeader(http.StatusNotFound)
 			return
 		}

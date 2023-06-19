@@ -74,7 +74,7 @@ func (pgdb *PostgresDB) AddGaugeValue(ctx context.Context, name string, value fl
 		return err
 	}
 	_, err = tx.Exec(ctx,
-		`INSERT INTO metrics (ID,MTYPE,VALUE) VALUES ($1, $2, $3) ON CONFLICT (ID) DO UPDATE SET VALUE = $3;`, name, "gauge", value)
+		`INSERT INTO metrics (mname,mtype,value) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET value = $3;`, name, "gauge", value)
 	if err != nil {
 		tx.Rollback(ctx)
 		return err
@@ -89,7 +89,7 @@ func (pgdb *PostgresDB) AddCounterValue(ctx context.Context, name string, value 
 		return err
 	}
 	_, err = tx.Exec(ctx,
-		`INSERT INTO metrics (ID,MTYPE,DELTA) VALUES ($1, $2, $3)  ON CONFLICT (ID) DO UPDATE SET DELTA = metrics.DELTA+$3;`, name, "counter", value)
+		`INSERT INTO metrics (mname,mtype,delta) VALUES ($1, $2, $3)  ON CONFLICT (mname) DO UPDATE SET delta = metrics.delta+$3;`, name, "counter", value)
 	if err != nil {
 		tx.Rollback(ctx)
 		return err
@@ -101,7 +101,7 @@ func (pgdb *PostgresDB) AddCounterValue(ctx context.Context, name string, value 
 func (pgdb *PostgresDB) GetGauge(ctx context.Context, name string) (float64, bool) {
 	var value float64
 	row := pgdb.pool.QueryRow(ctx,
-		"SELECT metrics.VALUE  FROM metrics WHERE metrics.ID=$1", name)
+		"SELECT metrics.value  FROM metrics WHERE metrics.mname=$1", name)
 
 	err := row.Scan(&value)
 	if err != nil {
@@ -115,7 +115,7 @@ func (pgdb *PostgresDB) GetGauge(ctx context.Context, name string) (float64, boo
 func (pgdb *PostgresDB) GetCounter(ctx context.Context, name string) (int64, bool) {
 	var value int64
 	row := pgdb.pool.QueryRow(ctx,
-		"SELECT metrics.DELTA  FROM metrics WHERE metrics.ID=$1", name)
+		"SELECT metrics.delta  FROM metrics WHERE metrics.mname=$1", name)
 	err := row.Scan(&value)
 	if err != nil {
 		errStr := fmt.Sprintf("Error in get counter value %s", name)
@@ -129,7 +129,7 @@ func (pgdb *PostgresDB) GetAllGaugeValues(ctx context.Context) map[string]float6
 	gaugeMetrics := make(map[string]float64)
 	var nameValue string
 	var value float64
-	queryName := `SELECT ID,VALUE FROM metrics WHERE VALUE IS NOT NULL;`
+	queryName := `SELECT mname,value FROM metrics WHERE value IS NOT NULL;`
 	row, err := pgdb.pool.Query(ctx,
 		queryName)
 	lasterr := row.Err()
@@ -156,7 +156,7 @@ func (pgdb *PostgresDB) GetAllCounterValues(ctx context.Context) map[string]int6
 	counterMetrics := make(map[string]int64)
 	var nameValue string
 	var value int64
-	queryName := `SELECT ID,DELTA FROM metrics WHERE DELTA IS NOT NULL;`
+	queryName := `SELECT manme,delta FROM metrics WHERE delta IS NOT NULL;`
 	row, err := pgdb.pool.Query(ctx,
 		queryName)
 	lasterr := row.Err()
@@ -188,7 +188,7 @@ func (pgdb *PostgresDB) AddAllValue(ctx context.Context, metrics []models.Metric
 		// все изменения записываются в транзакцию
 		if v.MType == "gauge" {
 			_, err = tx.Exec(ctx,
-				`INSERT INTO metrics (ID,MTYPE,VALUE) VALUES ($1, $2, $3) ON CONFLICT (ID) DO UPDATE SET VALUE = $3;`, v.ID, "gauge", v.Value)
+				`INSERT INTO metrics (mname,mtype,value) VALUES ($1, $2, $3) ON CONFLICT (mname) DO UPDATE SET value = $3;`, v.ID, "gauge", v.Value)
 			if err != nil {
 				// если ошибка, то откатываем изменения
 				tx.Rollback(ctx)
@@ -196,7 +196,7 @@ func (pgdb *PostgresDB) AddAllValue(ctx context.Context, metrics []models.Metric
 			}
 		} else {
 			_, err = tx.Exec(ctx,
-				`INSERT INTO metrics (ID,MTYPE,DELTA) VALUES ($1, $2, $3)  ON CONFLICT (ID) DO UPDATE SET DELTA = metrics.DELTA+$3;`, v.ID, "counter", v.Delta)
+				`INSERT INTO metrics (mname,mtype,delta) VALUES ($1, $2, $3)  ON CONFLICT (mname) DO UPDATE SET delta = metrics.delta+$3;`, v.ID, "counter", v.Delta)
 			if err != nil {
 				// если ошибка, то откатываем изменения
 				tx.Rollback(ctx)

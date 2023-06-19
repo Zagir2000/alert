@@ -37,8 +37,8 @@ func run(flagStruct *FlagVar) error {
 		defer postgresDB.Close()
 	}
 
-	newHandStruct := handlers.MetricHandlerNew(memStorageInterface, log, postgresDB)
-	router := handlers.Router(ctx, newHandStruct)
+	newHandStruct := handlers.MetricHandlerNew(memStorageInterface, postgresDB)
+	router := handlers.Router(ctx, log, newHandStruct)
 	log.Info("Running server on", zap.String("", flagStruct.runAddr))
 	return http.ListenAndServe(flagStruct.runAddr, router)
 }

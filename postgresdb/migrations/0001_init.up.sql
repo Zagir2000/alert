@@ -4,13 +4,16 @@ DO $$
 BEGIN
    
     CREATE TABLE IF NOT EXISTS metrics (
-        ID TEXT UNIQUE,
-        MTYPE TEXT,
-        DELTA BIGINT,
-        VALUE DOUBLE PRECISION
+             id INT GENERATED ALWAYS AS IDENTITY,
+            mname TEXT NOT NULL,
+            mtype TEXT NOT NULL,
+            delta BIGINT,
+            value DOUBLE PRECISION,
+            PRIMARY KEY(id),
+            UNIQUE(mname, mtype)
     );
 
-    CREATE INDEX IF NOT EXISTS metric_id ON metrics USING hash(ID);
+    CREATE INDEX IF NOT EXISTS metric_id ON metrics USING hash(id);
 END $$;
 --
 --

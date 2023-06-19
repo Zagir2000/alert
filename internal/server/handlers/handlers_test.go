@@ -2,12 +2,10 @@ package handlers
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Zagir2000/alert/internal/server/logger"
 	"github.com/Zagir2000/alert/internal/server/storage"
 	"github.com/d5/tengo/assert"
 	"github.com/stretchr/testify/require"
@@ -56,13 +54,10 @@ func TestMetricHandler_MainPage(t *testing.T) {
 			},
 		},
 	}
-	logger, err := logger.InitializeLogger("info")
-	if err != nil {
-		log.Println(err)
-	}
+
 	memStorage := storage.NewMemStorage()
-	newHandStruct := MetricHandlerNew(memStorage, logger, nil)
-	r := Router(context.Background(), newHandStruct)
+	newHandStruct := MetricHandlerNew(memStorage, nil)
+	r := Router(context.Background(), nil, newHandStruct)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request, err := http.NewRequest("POST", tt.url, nil)
