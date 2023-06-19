@@ -74,7 +74,7 @@ func (pgdb *PostgresDB) AddGaugeValue(ctx context.Context, name string, value fl
 		return err
 	}
 	_, err = tx.Exec(ctx,
-		`INSERT INTO metrics (mname,mtype,value) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET value = $3;`, name, "gauge", value)
+		`INSERT INTO metrics (mname,mtype,value) VALUES ($1, $2, $3) ON CONFLICT (mname, mtype) DO UPDATE SET value = $3;`, name, "gauge", value)
 	if err != nil {
 		tx.Rollback(ctx)
 		return err
@@ -89,7 +89,7 @@ func (pgdb *PostgresDB) AddCounterValue(ctx context.Context, name string, value 
 		return err
 	}
 	_, err = tx.Exec(ctx,
-		`INSERT INTO metrics (mname,mtype,delta) VALUES ($1, $2, $3)  ON CONFLICT (mname) DO UPDATE SET delta = metrics.delta+$3;`, name, "counter", value)
+		`INSERT INTO metrics (mname,mtype,delta) VALUES ($1, $2, $3)  ON CONFLICT ON CONFLICT (mname, mtype) DO UPDATE SET delta = metrics.delta+$3;`, name, "counter", value)
 	if err != nil {
 		tx.Rollback(ctx)
 		return err

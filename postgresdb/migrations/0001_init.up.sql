@@ -4,7 +4,7 @@ DO $$
 BEGIN
    
     CREATE TABLE IF NOT EXISTS metrics (
-             id INT GENERATED ALWAYS AS IDENTITY,
+            id INT GENERATED ALWAYS AS IDENTITY,
             mname TEXT NOT NULL,
             mtype TEXT NOT NULL,
             delta BIGINT,
@@ -13,7 +13,8 @@ BEGIN
             UNIQUE(mname, mtype)
     );
 
-    CREATE INDEX IF NOT EXISTS metric_id ON metrics USING hash(id);
+    CREATE INDEX IF NOT EXISTS mname_id ON metrics USING hash(mname);
+    CREATE INDEX IF NOT EXISTS mtype_id ON metrics USING hash(mtype);
 END $$;
 --
 --
