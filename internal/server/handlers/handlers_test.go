@@ -1,13 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Zagir2000/alert/internal/logger"
-	"github.com/Zagir2000/alert/internal/storage"
+	"github.com/Zagir2000/alert/internal/server/logger"
+	"github.com/Zagir2000/alert/internal/server/storage"
 	"github.com/d5/tengo/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +16,6 @@ import (
 func TestMetricHandler_MainPage(t *testing.T) {
 	type want struct {
 		code        int
-		response    string
 		contentType string
 	}
 	tests := []struct {
@@ -61,8 +61,8 @@ func TestMetricHandler_MainPage(t *testing.T) {
 		log.Println(err)
 	}
 	memStorage := storage.NewMemStorage()
-	newHandStruct := MetricHandlerNew(memStorage, logger)
-	r := Router(newHandStruct)
+	newHandStruct := MetricHandlerNew(memStorage, nil)
+	r := Router(context.Background(), logger, newHandStruct)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request, err := http.NewRequest("POST", tt.url, nil)

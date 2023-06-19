@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/Zagir2000/alert/internal/metricscollect"
+	"github.com/Zagir2000/alert/internal/agent/metricscollect"
 )
 
 func main() {

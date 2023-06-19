@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"context"
+	"fmt"
 	"testing"
 )
 
@@ -35,7 +37,10 @@ func TestAddGaugeValueStorage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := NewMemStorage()
-			got.AddGaugeValue(tt.metric, tt.value)
+			err := got.AddGaugeValue(context.Background(), tt.metric, tt.value)
+			if err != nil {
+				fmt.Println(err)
+			}
 			if got == tt.want {
 				t.Errorf("NewStorage() = %v, want %v", got, tt.want)
 			}
@@ -76,7 +81,10 @@ func TestSetCounterStorage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := NewMemStorage()
-			got.AddCounterValue(tt.metric, tt.value)
+			err := got.AddCounterValue(context.Background(), tt.metric, tt.value)
+			if err != nil {
+				fmt.Println(err)
+			}
 			if got == tt.want {
 				t.Errorf("NewStorage() = %v, want %v", got, tt.want)
 			}

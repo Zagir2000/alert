@@ -93,78 +93,67 @@ func (m *RuntimeMetrics) AddValueMetric() error {
 	time.Sleep(m.pollInterval * time.Second)
 	return nil
 }
-func (m *RuntimeMetrics) jsonMetricsToBytes() [][]byte {
-	var res [][]byte
+func (m *RuntimeMetrics) jsonMetricsToBatch() []byte {
+	var metrics []models.Metrics
 	for k, v := range m.RuntimeMemstats {
-		jsonGauage := &models.Metrics{
+		valueGauge := v
+		jsonGauge := &models.Metrics{
 			ID:    k,
 			MType: gaugeMetric,
-			Value: &v,
+			Value: &valueGauge,
 		}
-		out, err := json.Marshal(jsonGauage)
-		if err != nil {
-			log.Fatal(err)
-		}
-		res = append(res, out)
+		metrics = append(metrics, *jsonGauge)
 	}
-	URLRandomGuage := &models.Metrics{
+	URLRandomGauge := &models.Metrics{
 		ID:    randomValueName,
 		MType: gaugeMetric,
 		Value: &m.RandomValue,
 	}
-
-	out, err := json.Marshal(URLRandomGuage)
-	if err != nil {
-		log.Fatal(err)
-	}
-	res = append(res, out)
-
+	metrics = append(metrics, *URLRandomGauge)
 	URLCount := &models.Metrics{
 		ID:    pollCountName,
 		MType: counterMetric,
 		Delta: &m.PollCount,
 	}
-	out, err = json.Marshal(URLCount)
+	metrics = append(metrics, *URLCount)
+	out, err := json.Marshal(metrics)
 	if err != nil {
 		log.Fatal(err)
 	}
-	res = append(res, out)
-	return res
+	return out
 }
+
 func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
 
 	time.Sleep(m.reportInterval * time.Second)
 	client := resty.New()
 	var responseErr SendMetricsError
-	url := strings.Join([]string{"http:/", hostpath, "update/"}, "/")
-	for _, k := range m.jsonMetricsToBytes() {
-		res, err := gzipCompress(k)
-		if err != nil {
-			return err
-		}
-		_, err = client.R().
-			SetError(&responseErr).
-			SetHeader("Content-Encoding", compressType).
-			SetHeader("Content-Type", contentType).
-			SetBody(res).
-			Post(url)
-
-		if err != nil {
-
-			if errors.Is(err, syscall.ECONNRESET) && errors.Is(err, syscall.ECONNREFUSED) {
-				_, err := client.R().
-					SetHeader("Content-Type", contentType).
-					SetHeader("Content-Encoding", compressType).
-					SetBody(res).
-					Post(url)
-				if err != nil {
-					return err
-				}
-			}
-
-		}
+	url := strings.Join([]string{"http:/", hostpath, "updates/"}, "/")
+	out := m.jsonMetricsToBatch()
+	res, err := gzipCompress(out)
+	if err != nil {
+		return err
 	}
+	_, err = client.R().
+		SetError(&responseErr).
+		SetHeader("Content-Encoding", compressType).
+		SetHeader("Content-Type", contentType).
+		SetBody(res).
+		Post(url)
 
+	if err != nil {
+		if errors.Is(err, syscall.ECONNRESET) && errors.Is(err, syscall.ECONNREFUSED) {
+			_, err := client.R().
+				SetHeader("Content-Type", contentType).
+				SetHeader("Content-Encoding", compressType).
+				SetBody(res).
+				Post(url)
+			if err != nil {
+				return err
+			}
+		}
+
+	}
 	return nil
 }
 
