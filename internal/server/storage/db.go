@@ -89,7 +89,7 @@ func (pgdb *PostgresDB) AddCounterValue(ctx context.Context, name string, value 
 		return err
 	}
 	_, err = tx.Exec(ctx,
-		`INSERT INTO metrics (mname,mtype,delta) VALUES ($1, $2, $3)  ON CONFLICT ON CONFLICT (mname, mtype) DO UPDATE SET delta = metrics.delta+$3;`, name, "counter", value)
+		`INSERT INTO metrics (mname,mtype,delta) VALUES ($1, $2, $3)  ON CONFLICT (mname, mtype) DO UPDATE SET delta = metrics.delta+$3;`, name, "counter", value)
 	if err != nil {
 		tx.Rollback(ctx)
 		return err
@@ -188,7 +188,7 @@ func (pgdb *PostgresDB) AddAllValue(ctx context.Context, metrics []models.Metric
 		// все изменения записываются в транзакцию
 		if v.MType == "gauge" {
 			_, err = tx.Exec(ctx,
-				`INSERT INTO metrics (mname,mtype,value) VALUES ($1, $2, $3) ON CONFLICT (mname) DO UPDATE SET value = $3;`, v.ID, "gauge", v.Value)
+				`INSERT INTO metrics (mname,mtype,value) VALUES ($1, $2, $3) ON CONFLICT (mname, mtype) DO UPDATE SET value = $3;`, v.ID, "gauge", v.Value)
 			if err != nil {
 				// если ошибка, то откатываем изменения
 				tx.Rollback(ctx)
@@ -196,7 +196,7 @@ func (pgdb *PostgresDB) AddAllValue(ctx context.Context, metrics []models.Metric
 			}
 		} else {
 			_, err = tx.Exec(ctx,
-				`INSERT INTO metrics (mname,mtype,delta) VALUES ($1, $2, $3)  ON CONFLICT (mname) DO UPDATE SET delta = metrics.delta+$3;`, v.ID, "counter", v.Delta)
+				`INSERT INTO metrics (mname,mtype,delta) VALUES ($1, $2, $3)  ON CONFLICT (mname, mtype) DO UPDATE SET delta = metrics.delta+$3;`, v.ID, "counter", v.Delta)
 			if err != nil {
 				// если ошибка, то откатываем изменения
 				tx.Rollback(ctx)
