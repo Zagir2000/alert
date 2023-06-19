@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/Zagir2000/alert/internal/server/handlers"
+	"github.com/Zagir2000/alert/internal/server/logger"
 	"github.com/Zagir2000/alert/internal/server/storage"
 	"github.com/d5/tengo/assert"
 	"github.com/stretchr/testify/require"
@@ -47,9 +49,13 @@ func TestRun(t *testing.T) {
 			},
 		},
 	}
+	logger, err := logger.InitializeLogger("info")
+	if err != nil {
+		log.Println(err)
+	}
 	m := storage.NewMemStorage()
 	newHandStruct := handlers.MetricHandlerNew(m, nil)
-	ts := httptest.NewServer(handlers.Router(context.Background(), nil, newHandStruct))
+	ts := httptest.NewServer(handlers.Router(context.Background(), logger, newHandStruct))
 	defer ts.Close()
 
 	for _, test := range tests {
