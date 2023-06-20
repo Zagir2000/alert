@@ -11,7 +11,6 @@ func TestRuntimeMetrics_SendMetrics(t *testing.T) {
 		PollCount       int64
 		RandomValue     float64
 		pollInterval    time.Duration
-		reportInterval  time.Duration
 	}
 	type args struct {
 		hostpath string
