@@ -14,7 +14,6 @@ func CheckHash(data []byte, secretKey, checksum string) error {
 	// вычисляем хеш
 	hash := h.Sum(nil)
 	hashString := fmt.Sprintf("%x", hash)
-	fmt.Println(fmt.Sprintf("%x", checksum))
 	if hashString == checksum {
 		return nil
 	}
