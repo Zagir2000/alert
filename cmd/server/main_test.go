@@ -55,7 +55,7 @@ func TestRun(t *testing.T) {
 	}
 	m := storage.NewMemStorage()
 	newHandStruct := handlers.MetricHandlerNew(m, nil)
-	ts := httptest.NewServer(handlers.Router(context.Background(), logger, newHandStruct))
+	ts := httptest.NewServer(handlers.Router(context.Background(), logger, newHandStruct, ""))
 	defer ts.Close()
 
 	for _, test := range tests {
