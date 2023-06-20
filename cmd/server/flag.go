@@ -14,6 +14,7 @@ type FlagVar struct {
 	restore         bool
 	databaseDsn     string
 	migrationsDir   string
+	secretKey       string
 }
 
 func NewFlagVarStruct() *FlagVar {
@@ -33,6 +34,7 @@ func (f *FlagVar) parseFlags() error {
 	flag.BoolVar(&f.restore, "r", true, "value specifying whether or not to load previously saved values from the specified file at server startup")
 	flag.StringVar(&f.databaseDsn, "d", "", "connection to databse")
 	flag.StringVar(&f.migrationsDir, "m", "postgresdb/migrations", "migrations to db")
+	flag.StringVar(&f.secretKey, "k", "", "key string for signature hash")
 
 	// парсим переданные серверу аргументы в зарегистрированные переменные
 	flag.Parse()
@@ -63,6 +65,8 @@ func (f *FlagVar) parseFlags() error {
 	if envDatabaseDsn := os.Getenv("DATABASE_DSN"); envDatabaseDsn != "" {
 		f.databaseDsn = envDatabaseDsn
 	}
-
+	if envKey, ok := os.LookupEnv("KEY"); ok {
+		f.secretKey = envKey
+	}
 	return nil
 }

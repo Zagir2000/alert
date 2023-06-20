@@ -31,9 +31,8 @@ func TestRuntimeMetrics_SendMetrics(t *testing.T) {
 				PollCount:       tt.fields.PollCount,
 				RandomValue:     tt.fields.RandomValue,
 				pollInterval:    tt.fields.pollInterval,
-				reportInterval:  tt.fields.reportInterval,
 			}
-			if err := m.SendMetrics(tt.args.hostpath); (err != nil) != tt.wantErr {
+			if err := m.SendMetrics(tt.args.hostpath, ""); (err != nil) != tt.wantErr {
 				t.Errorf("RuntimeMetrics.SendMetrics() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

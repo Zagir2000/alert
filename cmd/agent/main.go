@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/Zagir2000/alert/internal/agent/metricscollect"
 )
@@ -13,7 +14,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	Metric := metricscollect.IntervalPin(flag.pollInterval, flag.reportInterval)
+	Metric := metricscollect.IntervalPin(flag.pollInterval)
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	go Metric.NewСollect(ctx, cancel)
@@ -22,7 +23,8 @@ func main() {
 		case <-ctx.Done():
 			return
 		default:
-			err := Metric.SendMetrics(flag.runAddr)
+			time.Sleep(time.Duration(flag.reportInterval) * time.Second)
+			err := Metric.SendMetrics(flag.runAddr, flag.secretKey)
 			if err != nil {
 				log.Println("Error in send metrics:", err)
 				cancel()

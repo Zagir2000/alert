@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Zagir2000/alert/internal/agent/hash"
 	"github.com/Zagir2000/alert/internal/models"
 	"github.com/go-resty/resty/v2"
 	"github.com/johncgriffin/overflow"
@@ -32,7 +33,6 @@ type RuntimeMetrics struct {
 	PollCount       int64
 	RandomValue     float64
 	pollInterval    time.Duration
-	reportInterval  time.Duration
 }
 
 type SendMetricsError struct {
@@ -41,8 +41,8 @@ type SendMetricsError struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-func IntervalPin(pollIntervalFlag int, reportIntervalFlag int) RuntimeMetrics {
-	return RuntimeMetrics{pollInterval: time.Duration(pollIntervalFlag), reportInterval: time.Duration(reportIntervalFlag), RuntimeMemstats: make(map[string]float64), PollCount: 0, RandomValue: 0}
+func IntervalPin(pollIntervalFlag int) RuntimeMetrics {
+	return RuntimeMetrics{pollInterval: time.Duration(pollIntervalFlag), RuntimeMemstats: make(map[string]float64), PollCount: 0, RandomValue: 0}
 }
 
 func (m *RuntimeMetrics) AddValueMetric() error {
@@ -123,29 +123,28 @@ func (m *RuntimeMetrics) jsonMetricsToBatch() []byte {
 	return out
 }
 
-func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
-
-	time.Sleep(m.reportInterval * time.Second)
-	client := resty.New()
-	var responseErr SendMetricsError
+func (m *RuntimeMetrics) SendMetrics(hostpath string, secretKey string) error {
 	url := strings.Join([]string{"http:/", hostpath, "updates/"}, "/")
 	out := m.jsonMetricsToBatch()
 	res, err := gzipCompress(out)
 	if err != nil {
 		return err
 	}
+	responseErr := &SendMetricsError{}
+	client := resty.New()
 	_, err = client.R().
-		SetError(&responseErr).
+		SetError(responseErr).
 		SetHeader("Content-Encoding", compressType).
 		SetHeader("Content-Type", contentType).
+		SetHeader("HashSHA256", hash.CrateHash(secretKey, out)).
 		SetBody(res).
 		Post(url)
-
 	if err != nil {
 		if errors.Is(err, syscall.ECONNRESET) && errors.Is(err, syscall.ECONNREFUSED) {
 			_, err := client.R().
 				SetHeader("Content-Type", contentType).
 				SetHeader("Content-Encoding", compressType).
+				SetHeaderVerbatim("HashSHA256", hash.CrateHash(secretKey, out)).
 				SetBody(res).
 				Post(url)
 			if err != nil {
@@ -154,6 +153,7 @@ func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
 		}
 
 	}
+
 	return nil
 }
 
