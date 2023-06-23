@@ -1,6 +1,7 @@
 package metricscollect
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -31,7 +32,12 @@ func TestRuntimeMetrics_SendMetrics(t *testing.T) {
 				RandomValue:     tt.fields.RandomValue,
 				pollInterval:    tt.fields.pollInterval,
 			}
-			if err := m.SendMetrics(tt.args.hostpath, ""); (err != nil) != tt.wantErr {
+			out := m.jsonMetricsToBatch()
+			res, err := gzipCompress(out)
+			if err != nil {
+				fmt.Println(err)
+			}
+			if err := m.SendMetrics(res, tt.args.hostpath, ""); (err != nil) != tt.wantErr {
 				t.Errorf("RuntimeMetrics.SendMetrics() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

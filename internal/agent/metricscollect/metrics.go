@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"math/rand"
 	"runtime"
@@ -17,6 +18,8 @@ import (
 	"github.com/Zagir2000/alert/internal/models"
 	"github.com/go-resty/resty/v2"
 	"github.com/johncgriffin/overflow"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/mem"
 )
 
 const (
@@ -93,6 +96,22 @@ func (m *RuntimeMetrics) AddValueMetric() error {
 	time.Sleep(m.pollInterval * time.Second)
 	return nil
 }
+
+func (m *RuntimeMetrics) AddVaueMetricGopsutil() error {
+	cp, err := cpu.Percent(0, false)
+	if err != nil {
+		return err
+	}
+	mapstats := make(map[string]float64)
+	mem, err := mem.VirtualMemory()
+	mapstats["TotalMemory"] = float64(mem.Total)
+	mapstats["FreeMemory"] = float64(mem.Free)
+	mapstats["CPUutilization1"] = cp[0]
+
+	m.RuntimeMemstats = mapstats
+	return nil
+}
+
 func (m *RuntimeMetrics) jsonMetricsToBatch() []byte {
 	var metrics []models.Metrics
 	for k, v := range m.RuntimeMemstats {
@@ -123,20 +142,16 @@ func (m *RuntimeMetrics) jsonMetricsToBatch() []byte {
 	return out
 }
 
-func (m *RuntimeMetrics) SendMetrics(hostpath string, secretKey string) error {
+func (m *RuntimeMetrics) SendMetrics(res []byte, hash, hostpath string) error {
 	url := strings.Join([]string{"http:/", hostpath, "updates/"}, "/")
-	out := m.jsonMetricsToBatch()
-	res, err := gzipCompress(out)
-	if err != nil {
-		return err
-	}
+
 	responseErr := &SendMetricsError{}
 	client := resty.New()
-	_, err = client.R().
+	_, err := client.R().
 		SetError(responseErr).
 		SetHeader("Content-Encoding", compressType).
 		SetHeader("Content-Type", contentType).
-		SetHeader("HashSHA256", hash.CrateHash(secretKey, out)).
+		SetHeader("HashSHA256", hash).
 		SetBody(res).
 		Post(url)
 	if err != nil {
@@ -144,7 +159,7 @@ func (m *RuntimeMetrics) SendMetrics(hostpath string, secretKey string) error {
 			_, err := client.R().
 				SetHeader("Content-Type", contentType).
 				SetHeader("Content-Encoding", compressType).
-				SetHeaderVerbatim("HashSHA256", hash.CrateHash(secretKey, out)).
+				SetHeaderVerbatim("HashSHA256", hash).
 				SetBody(res).
 				Post(url)
 			if err != nil {
@@ -157,16 +172,45 @@ func (m *RuntimeMetrics) SendMetrics(hostpath string, secretKey string) error {
 	return nil
 }
 
-func (m *RuntimeMetrics) NewСollect(ctx context.Context, cancel context.CancelFunc) {
+func (m *RuntimeMetrics) NewСollect(ctx context.Context, cancel context.CancelFunc, jobs chan []byte) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
+
 			err := m.AddValueMetric()
 			if err != nil {
 				log.Println("Error in collect metrics:", err)
 			}
+			out := m.jsonMetricsToBatch()
+			res, err := gzipCompress(out)
+			if err != nil {
+				log.Println("Error in comress metrics:", err)
+			}
+			jobs <- res
+
+		}
+
+	}
+}
+
+func (m *RuntimeMetrics) NewСollectMetricGopsutil(ctx context.Context, cancel context.CancelFunc, jobs chan []byte) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			err := m.AddVaueMetricGopsutil()
+			if err != nil {
+				log.Println("Error in collect metrics", err)
+			}
+			out := m.jsonMetricsToBatch()
+			res, err := gzipCompress(out)
+			if err != nil {
+				log.Println("Error in comress metrics:", err)
+			}
+			jobs <- res
 		}
 
 	}
@@ -188,4 +232,23 @@ func gzipCompress(data []byte) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), err
+}
+
+func (m *RuntimeMetrics) SendMetricsGor(ctx context.Context, cancel context.CancelFunc, jobs <-chan []byte, runAddr, secretKey string) {
+	for j := range jobs {
+		select {
+		case <-ctx.Done():
+			fmt.Println(j)
+			return
+		default:
+			hash := hash.CrateHash(secretKey, j)
+			err := m.SendMetrics(j, hash, runAddr)
+			if err != nil {
+				log.Println("Error in send metrics:", err)
+				cancel()
+			}
+		}
+
+	}
+
 }

@@ -11,6 +11,7 @@ type FlagVar struct {
 	reportInterval int
 	pollInterval   int
 	secretKey      string
+	rateLimit      int
 }
 
 func NewFlagVarStruct() *FlagVar {
@@ -27,6 +28,7 @@ func (f *FlagVar) parseFlags() error {
 	flag.IntVar(&f.pollInterval, "p", 2, "frequency of polling metrics from the package")
 	//ключ для подписи хэша
 	flag.StringVar(&f.secretKey, "k", "", "key string for signature hash")
+	flag.IntVar(&f.rateLimit, "l", 1, "number of source related materials on the server")
 
 	flag.Parse()
 
@@ -53,5 +55,14 @@ func (f *FlagVar) parseFlags() error {
 	if envKey, ok := os.LookupEnv("KEY"); ok {
 		f.secretKey = envKey
 	}
+
+	if envRateLimit, ok := os.LookupEnv("REPORT_INTERVAL"); ok {
+		envRateLimitInt, err := strconv.Atoi(envRateLimit)
+		if err != nil {
+			return err
+		}
+		f.reportInterval = envRateLimitInt
+	}
+
 	return nil
 }

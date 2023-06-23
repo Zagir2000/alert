@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -14,22 +15,24 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	Metric := metricscollect.IntervalPin(flag.pollInterval)
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
-	go Metric.NewСollect(ctx, cancel)
+	// создаем буферизованный канал для отправки результатов
+	jobs := make(chan []byte, 1)
+
+	go Metric.NewСollect(ctx, cancel, jobs)
+	go Metric.NewСollectMetricGopsutil(ctx, cancel, jobs)
 	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			time.Sleep(time.Duration(flag.reportInterval) * time.Second)
-			err := Metric.SendMetrics(flag.runAddr, flag.secretKey)
-			if err != nil {
-				log.Println("Error in send metrics:", err)
-				cancel()
-			}
+
+		for w := 1; w <= flag.rateLimit; w++ {
+			time.Sleep(time.Duration(flag.pollInterval) * time.Second)
+			fmt.Println(w)
+			go Metric.SendMetricsGor(ctx, cancel, jobs, flag.runAddr, flag.secretKey)
+
 		}
+
 	}
 
 }
