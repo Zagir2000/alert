@@ -104,6 +104,9 @@ func (m *RuntimeMetrics) AddVaueMetricGopsutil() error {
 	}
 	mapstats := make(map[string]float64)
 	mem, err := mem.VirtualMemory()
+	if err != nil {
+		return err
+	}
 	mapstats["TotalMemory"] = float64(mem.Total)
 	mapstats["FreeMemory"] = float64(mem.Free)
 	mapstats["CPUutilization1"] = cp[0]
