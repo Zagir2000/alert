@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Zagir2000/alert/internal/models"
+	"github.com/Zagir2000/alert/internal/server/hash"
 	"github.com/Zagir2000/alert/internal/server/storage"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
@@ -278,7 +280,7 @@ func (m *MetricHandlerDB) PingDBConnect(ctx context.Context, log *zap.Logger) ht
 	}
 }
 
-func (m *MetricHandlerDB) UpdateNewMetricsBatch(ctx context.Context, log *zap.Logger) http.HandlerFunc {
+func (m *MetricHandlerDB) UpdateNewMetricsBatch(ctx context.Context, log *zap.Logger, keySecret string) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 
 		if req.Method != http.MethodPost {
@@ -293,7 +295,19 @@ func (m *MetricHandlerDB) UpdateNewMetricsBatch(ctx context.Context, log *zap.Lo
 			res.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		err := m.Storage.AddAllValue(ctx, metrics)
+		out, err := json.Marshal(&metrics)
+		if err != nil {
+			log.Debug("cannot marshal request body", zap.Error(err))
+		}
+		if keySecret != "" {
+			err := hash.CheckHash(out, keySecret, req.Header.Get("HashSHA256"), sha256.New)
+			if err != nil {
+				log.Debug("cannot add new metrics value", zap.Error(err))
+				res.WriteHeader(http.StatusBadRequest)
+				return
+			}
+		}
+		err = m.Storage.AddAllValue(ctx, metrics)
 		if err != nil {
 			log.Debug("cannot add new metrics value", zap.Error(err))
 			res.WriteHeader(http.StatusNotFound)
