@@ -4,18 +4,21 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/Zagir2000/alert/internal/agent/metricscollect"
+	"golang.org/x/sync/errgroup"
 )
 
 func main() {
+
 	flag := NewFlagVarStruct()
 	err := flag.parseFlags()
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	g := new(errgroup.Group)
 	Metric := metricscollect.IntervalPin(flag.pollInterval)
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
@@ -25,14 +28,26 @@ func main() {
 	go Metric.NewСollect(ctx, cancel, jobs)
 	go Metric.NewСollectMetricGopsutil(ctx, cancel, jobs)
 	for {
-
-		for w := 1; w <= flag.rateLimit; w++ {
-			time.Sleep(time.Duration(flag.pollInterval) * time.Second)
-			fmt.Println(w)
-			go Metric.SendMetricsGor(ctx, cancel, jobs, flag.runAddr, flag.secretKey)
-
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(time.Duration(flag.pollInterval) * time.Second):
+			for w := 1; w <= flag.rateLimit; w++ {
+				fmt.Println(w)
+				g.Go(func() error {
+					var mx sync.Mutex
+					mx.Lock()
+					err := Metric.SendMetricsGor(jobs, flag.runAddr, flag.secretKey)
+					if err != nil {
+						return err
+					}
+					return nil
+				})
+			}
 		}
-
+		if err := g.Wait(); err != nil {
+			cancel()
+		}
 	}
 
 }

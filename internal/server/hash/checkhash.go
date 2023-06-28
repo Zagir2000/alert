@@ -2,14 +2,14 @@ package hash
 
 import (
 	"crypto/hmac"
-	"crypto/sha256"
 	"errors"
 	"fmt"
+	"hash"
 )
 
-func CheckHash(data []byte, secretKey, checksum string) error {
+func CheckHash(data []byte, secretKey, checksum string, hashNew func() hash.Hash) error {
 	secretKeyToByte := []byte(secretKey)
-	h := hmac.New(sha256.New, secretKeyToByte)
+	h := hmac.New(hashNew, secretKeyToByte)
 	h.Write(data)
 	// вычисляем хеш
 	hash := h.Sum(nil)

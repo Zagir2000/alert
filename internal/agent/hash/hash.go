@@ -2,13 +2,13 @@ package hash
 
 import (
 	"crypto/hmac"
-	"crypto/sha256"
 	"fmt"
+	"hash"
 )
 
-func CrateHash(secretKey string, data []byte) string {
+func CrateHash(secretKey string, data []byte, hashNew func() hash.Hash) string {
 	secretKeyToByte := []byte(secretKey)
-	h := hmac.New(sha256.New, secretKeyToByte)
+	h := hmac.New(hashNew, secretKeyToByte)
 	h.Write(data)
 	// вычисляем хеш
 	dst := h.Sum(nil)

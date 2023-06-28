@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"math/rand"
 	"runtime"
@@ -237,21 +237,14 @@ func gzipCompress(data []byte) ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-func (m *RuntimeMetrics) SendMetricsGor(ctx context.Context, cancel context.CancelFunc, jobs <-chan []byte, runAddr, secretKey string) {
+func (m *RuntimeMetrics) SendMetricsGor(jobs <-chan []byte, runAddr, secretKey string) error {
 	for j := range jobs {
-		select {
-		case <-ctx.Done():
-			fmt.Println(j)
-			return
-		default:
-			hash := hash.CrateHash(secretKey, j)
-			err := m.SendMetrics(j, hash, runAddr)
-			if err != nil {
-				log.Println("Error in send metrics:", err)
-				cancel()
-			}
+		hash := hash.CrateHash(secretKey, j, sha256.New)
+		err := m.SendMetrics(j, hash, runAddr)
+		if err != nil {
+			log.Println("Error in send metrics:", err)
+			return err
 		}
-
 	}
-
+	return nil
 }

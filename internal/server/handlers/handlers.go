@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -299,7 +300,7 @@ func (m *MetricHandlerDB) UpdateNewMetricsBatch(ctx context.Context, log *zap.Lo
 			log.Debug("cannot marshal request body", zap.Error(err))
 		}
 		if keySecret != "" {
-			err := hash.CheckHash(out, keySecret, req.Header.Get("HashSHA256"))
+			err := hash.CheckHash(out, keySecret, req.Header.Get("HashSHA256"), sha256.New)
 			if err != nil {
 				log.Debug("cannot add new metrics value", zap.Error(err))
 				res.WriteHeader(http.StatusBadRequest)
