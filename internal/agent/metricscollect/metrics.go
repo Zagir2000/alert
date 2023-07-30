@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"log"
@@ -13,9 +14,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Zagir2000/alert/internal/agent/hash"
 	"github.com/Zagir2000/alert/internal/models"
 	"github.com/go-resty/resty/v2"
 	"github.com/johncgriffin/overflow"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/mem"
 )
 
 const (
@@ -32,7 +36,6 @@ type RuntimeMetrics struct {
 	PollCount       int64
 	RandomValue     float64
 	pollInterval    time.Duration
-	reportInterval  time.Duration
 }
 
 type SendMetricsError struct {
@@ -41,8 +44,8 @@ type SendMetricsError struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-func IntervalPin(pollIntervalFlag int, reportIntervalFlag int) RuntimeMetrics {
-	return RuntimeMetrics{pollInterval: time.Duration(pollIntervalFlag), reportInterval: time.Duration(reportIntervalFlag), RuntimeMemstats: make(map[string]float64), PollCount: 0, RandomValue: 0}
+func IntervalPin(pollIntervalFlag int) RuntimeMetrics {
+	return RuntimeMetrics{pollInterval: time.Duration(pollIntervalFlag), RuntimeMemstats: make(map[string]float64), PollCount: 0, RandomValue: 0}
 }
 
 func (m *RuntimeMetrics) AddValueMetric() error {
@@ -93,6 +96,27 @@ func (m *RuntimeMetrics) AddValueMetric() error {
 	time.Sleep(m.pollInterval * time.Second)
 	return nil
 }
+
+func (m *RuntimeMetrics) AddVaueMetricGopsutil() error {
+	cpuStat, err := cpu.Times(true)
+	if err != nil {
+		return err
+	}
+	mapstats := make(map[string]float64)
+	mem, err := mem.VirtualMemory()
+	if err != nil {
+		return err
+	}
+	mapstats["TotalMemory"] = float64(mem.Total)
+	mapstats["FreeMemory"] = float64(mem.Free)
+	for _, k := range cpuStat {
+		mapstats["CPUutilization1"] = k.Idle
+	}
+
+	m.RuntimeMemstats = mapstats
+	return nil
+}
+
 func (m *RuntimeMetrics) jsonMetricsToBatch() []byte {
 	var metrics []models.Metrics
 	for k, v := range m.RuntimeMemstats {
@@ -123,29 +147,24 @@ func (m *RuntimeMetrics) jsonMetricsToBatch() []byte {
 	return out
 }
 
-func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
-
-	time.Sleep(m.reportInterval * time.Second)
-	client := resty.New()
-	var responseErr SendMetricsError
+func (m *RuntimeMetrics) SendMetrics(res []byte, hash, hostpath string) error {
 	url := strings.Join([]string{"http:/", hostpath, "updates/"}, "/")
-	out := m.jsonMetricsToBatch()
-	res, err := gzipCompress(out)
-	if err != nil {
-		return err
-	}
-	_, err = client.R().
-		SetError(&responseErr).
+
+	responseErr := &SendMetricsError{}
+	client := resty.New()
+	_, err := client.R().
+		SetError(responseErr).
 		SetHeader("Content-Encoding", compressType).
 		SetHeader("Content-Type", contentType).
+		SetHeader("HashSHA256", hash).
 		SetBody(res).
 		Post(url)
-
 	if err != nil {
 		if errors.Is(err, syscall.ECONNRESET) && errors.Is(err, syscall.ECONNREFUSED) {
 			_, err := client.R().
 				SetHeader("Content-Type", contentType).
 				SetHeader("Content-Encoding", compressType).
+				SetHeaderVerbatim("HashSHA256", hash).
 				SetBody(res).
 				Post(url)
 			if err != nil {
@@ -154,19 +173,49 @@ func (m *RuntimeMetrics) SendMetrics(hostpath string) error {
 		}
 
 	}
+
 	return nil
 }
 
-func (m *RuntimeMetrics) NewСollect(ctx context.Context, cancel context.CancelFunc) {
+func (m *RuntimeMetrics) NewСollect(ctx context.Context, cancel context.CancelFunc, jobs chan []byte) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
+
 			err := m.AddValueMetric()
 			if err != nil {
-				log.Println("Error in collect metrics:", err)
+				log.Println("Error in collect metrics 1:", err)
 			}
+			out := m.jsonMetricsToBatch()
+			res, err := gzipCompress(out)
+			if err != nil {
+				log.Println("Error in comress metrics:", err)
+			}
+			jobs <- res
+
+		}
+
+	}
+}
+
+func (m *RuntimeMetrics) NewСollectMetricGopsutil(ctx context.Context, cancel context.CancelFunc, jobs chan []byte) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			err := m.AddVaueMetricGopsutil()
+			if err != nil {
+				log.Println("Error in collect metrics 1", err)
+			}
+			out := m.jsonMetricsToBatch()
+			res, err := gzipCompress(out)
+			if err != nil {
+				log.Println("Error in comress metrics:", err)
+			}
+			jobs <- res
 		}
 
 	}
@@ -188,4 +237,16 @@ func gzipCompress(data []byte) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), err
+}
+
+func (m *RuntimeMetrics) SendMetricsGor(jobs <-chan []byte, runAddr, secretKey string) error {
+	for j := range jobs {
+		hash := hash.CrateHash(secretKey, j, sha256.New)
+		err := m.SendMetrics(j, hash, runAddr)
+		if err != nil {
+			log.Println("Error in send metrics:", err)
+			return err
+		}
+	}
+	return nil
 }

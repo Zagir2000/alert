@@ -1,6 +1,7 @@
 package metricscollect
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -11,7 +12,6 @@ func TestRuntimeMetrics_SendMetrics(t *testing.T) {
 		PollCount       int64
 		RandomValue     float64
 		pollInterval    time.Duration
-		reportInterval  time.Duration
 	}
 	type args struct {
 		hostpath string
@@ -31,9 +31,13 @@ func TestRuntimeMetrics_SendMetrics(t *testing.T) {
 				PollCount:       tt.fields.PollCount,
 				RandomValue:     tt.fields.RandomValue,
 				pollInterval:    tt.fields.pollInterval,
-				reportInterval:  tt.fields.reportInterval,
 			}
-			if err := m.SendMetrics(tt.args.hostpath); (err != nil) != tt.wantErr {
+			out := m.jsonMetricsToBatch()
+			res, err := gzipCompress(out)
+			if err != nil {
+				fmt.Println(err)
+			}
+			if err := m.SendMetrics(res, tt.args.hostpath, ""); (err != nil) != tt.wantErr {
 				t.Errorf("RuntimeMetrics.SendMetrics() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

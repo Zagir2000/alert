@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/Zagir2000/alert/internal/models"
@@ -20,6 +21,7 @@ import (
 type PostgresDB struct {
 	pool *pgxpool.Pool
 	log  *zap.Logger
+	rw   sync.RWMutex
 }
 
 func (pgdb *PostgresDB) PingDB(ctx context.Context) error {
@@ -69,6 +71,8 @@ func (pgdb *PostgresDB) Close() {
 }
 
 func (pgdb *PostgresDB) AddGaugeValue(ctx context.Context, name string, value float64) error {
+	pgdb.rw.Lock()
+	defer pgdb.rw.Unlock()
 	tx, err := pgdb.pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -84,6 +88,8 @@ func (pgdb *PostgresDB) AddGaugeValue(ctx context.Context, name string, value fl
 }
 
 func (pgdb *PostgresDB) AddCounterValue(ctx context.Context, name string, value int64) error {
+	pgdb.rw.Lock()
+	defer pgdb.rw.Unlock()
 	tx, err := pgdb.pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -180,6 +186,8 @@ func (pgdb *PostgresDB) GetAllCounterValues(ctx context.Context) map[string]int6
 }
 
 func (pgdb *PostgresDB) AddAllValue(ctx context.Context, metrics []models.Metrics) error {
+	pgdb.rw.Lock()
+	defer pgdb.rw.Unlock()
 	tx, err := pgdb.pool.Begin(ctx)
 	if err != nil {
 		return err

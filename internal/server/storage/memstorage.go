@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"github.com/Zagir2000/alert/internal/models"
 )
@@ -10,6 +11,7 @@ import (
 type memStorage struct {
 	Gaugedata   map[string]float64
 	Counterdata map[string]int64
+	rw          sync.RWMutex
 }
 
 func NewMemStorage() *memStorage {
@@ -20,6 +22,8 @@ func NewMemStorage() *memStorage {
 }
 
 func (m *memStorage) AddGaugeValue(ctx context.Context, name string, value float64) error {
+	m.rw.Lock()
+	defer m.rw.Unlock()
 	m.Gaugedata[name] = value
 	valuenew, ok := m.Gaugedata[name]
 	if !ok && value == valuenew {
@@ -29,6 +33,8 @@ func (m *memStorage) AddGaugeValue(ctx context.Context, name string, value float
 }
 
 func (m *memStorage) AddCounterValue(ctx context.Context, name string, value int64) error {
+	m.rw.Lock()
+	defer m.rw.Unlock()
 	if value < 0 {
 		return errors.New("counter cannot decrease in value")
 	}
