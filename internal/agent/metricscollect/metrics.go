@@ -98,7 +98,7 @@ func (m *RuntimeMetrics) AddValueMetric() error {
 }
 
 func (m *RuntimeMetrics) AddVaueMetricGopsutil() error {
-	cp, err := cpu.Percent(0, false)
+	cpuStat, err := cpu.Times(true)
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,9 @@ func (m *RuntimeMetrics) AddVaueMetricGopsutil() error {
 	}
 	mapstats["TotalMemory"] = float64(mem.Total)
 	mapstats["FreeMemory"] = float64(mem.Free)
-	mapstats["CPUutilization1"] = cp[0]
+	for _, k := range cpuStat {
+		mapstats["CPUutilization1"] = k.Idle
+	}
 
 	m.RuntimeMemstats = mapstats
 	return nil
@@ -184,7 +186,7 @@ func (m *RuntimeMetrics) NewСollect(ctx context.Context, cancel context.CancelF
 
 			err := m.AddValueMetric()
 			if err != nil {
-				log.Println("Error in collect metrics:", err)
+				log.Println("Error in collect metrics 1:", err)
 			}
 			out := m.jsonMetricsToBatch()
 			res, err := gzipCompress(out)
@@ -206,7 +208,7 @@ func (m *RuntimeMetrics) NewСollectMetricGopsutil(ctx context.Context, cancel c
 		default:
 			err := m.AddVaueMetricGopsutil()
 			if err != nil {
-				log.Println("Error in collect metrics", err)
+				log.Println("Error in collect metrics 1", err)
 			}
 			out := m.jsonMetricsToBatch()
 			res, err := gzipCompress(out)

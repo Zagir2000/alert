@@ -14,7 +14,7 @@ func CheckHash(data []byte, secretKey, checksum string, hashNew func() hash.Hash
 	// вычисляем хеш
 	hash := h.Sum(nil)
 	hashString := fmt.Sprintf("%x", hash)
-	if hashString == checksum {
+	if hashString != checksum {
 		return nil
 	}
 	return errors.New("discrepancy between received and calculated hash")

@@ -23,7 +23,7 @@ func main() {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	// создаем буферизованный канал для отправки результатов
-	jobs := make(chan []byte, 1)
+	jobs := make(chan []byte, 2)
 
 	go Metric.NewСollect(ctx, cancel, jobs)
 	go Metric.NewСollectMetricGopsutil(ctx, cancel, jobs)
