@@ -118,7 +118,7 @@ func (m *RuntimeMetrics) AddVaueMetricGopsutil() error {
 }
 
 func (m *RuntimeMetrics) jsonMetricsToBatch() []byte {
-	var metrics []models.Metrics
+	metrics := make([]models.Metrics, 0, len(m.RuntimeMemstats)+2)
 	for k, v := range m.RuntimeMemstats {
 		valueGauge := v
 		jsonGauge := &models.Metrics{
@@ -147,7 +147,7 @@ func (m *RuntimeMetrics) jsonMetricsToBatch() []byte {
 	return out
 }
 
-func (m *RuntimeMetrics) SendMetrics(res []byte, hash, hostpath string) error {
+func SendMetrics(res []byte, hash, hostpath string) error {
 	url := strings.Join([]string{"http:/", hostpath, "updates/"}, "/")
 
 	responseErr := &SendMetricsError{}
@@ -205,7 +205,7 @@ func (m *RuntimeMetrics) NewСollectMetricGopsutil(ctx context.Context, cancel c
 		select {
 		case <-ctx.Done():
 			return
-		default:
+		case <-time.After(time.Duration(1) * time.Second):
 			err := m.AddVaueMetricGopsutil()
 			if err != nil {
 				log.Println("Error in collect metrics 1", err)
@@ -239,10 +239,11 @@ func gzipCompress(data []byte) ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-func (m *RuntimeMetrics) SendMetricsGor(jobs <-chan []byte, runAddr, secretKey string) error {
+func SendMetricsGor(jobs <-chan []byte, runAddr, secretKey string) error {
 	for j := range jobs {
+
 		hash := hash.CrateHash(secretKey, j, sha256.New)
-		err := m.SendMetrics(j, hash, runAddr)
+		err := SendMetrics(j, hash, runAddr)
 		if err != nil {
 			log.Println("Error in send metrics:", err)
 			return err
