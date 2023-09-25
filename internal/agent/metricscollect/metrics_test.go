@@ -37,7 +37,7 @@ func TestRuntimeMetrics_SendMetrics(t *testing.T) {
 			if err != nil {
 				fmt.Println(err)
 			}
-			if err := m.SendMetrics(res, tt.args.hostpath, ""); (err != nil) != tt.wantErr {
+			if err := SendMetrics(res, tt.args.hostpath, ""); (err != nil) != tt.wantErr {
 				t.Errorf("RuntimeMetrics.SendMetrics() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
