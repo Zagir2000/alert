@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-	_ "net/http/pprof" // подключаем пакет pprof
 
 	"github.com/Zagir2000/alert/internal/server/handlers"
 	"github.com/Zagir2000/alert/internal/server/logger"
