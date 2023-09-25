@@ -23,10 +23,10 @@ func main() {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 	// создаем буферизованный канал для отправки результатов
-	jobs := make(chan []byte, 20)
-	go Metric.NewСollectMetricGopsutil(ctx, cancel, jobs)
-	go Metric.NewСollect(ctx, cancel, jobs)
+	jobs := make(chan []byte, 2)
 
+	go Metric.NewСollect(ctx, cancel, jobs)
+	go Metric.NewСollectMetricGopsutil(ctx, cancel, jobs)
 	for {
 		select {
 		case <-ctx.Done():
@@ -37,7 +37,7 @@ func main() {
 				g.Go(func() error {
 					var mx sync.Mutex
 					mx.Lock()
-					err := metricscollect.SendMetricsGor(jobs, flag.runAddr, flag.secretKey)
+					err := Metric.SendMetricsGor(jobs, flag.runAddr, flag.secretKey)
 					if err != nil {
 						return err
 					}
