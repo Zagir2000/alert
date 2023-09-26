@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Роутер, который реализует все методы API.
 func Router(ctx context.Context, log *zap.Logger, newHandStruct *MetricHandlerDB, keySecret string) chi.Router {
 	r := chi.NewRouter()
 	r.Use((logger.WithLogging(log)))

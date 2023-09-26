@@ -23,14 +23,19 @@ import (
 )
 
 const (
-	counterMetric   string = "counter"
-	gaugeMetric     string = "gauge"
-	randomValueName string = "RandomValue"
+	counterMetric   string = "counter"     //counter metric
+	gaugeMetric     string = "gauge"       //gauge metric
+	randomValueName string = "RandomValue" // random value
 	pollCountName   string = "PollCount"
-	contentType     string = "application/json"
-	compressType    string = "gzip"
 )
 
+// Константы для хедера.
+const (
+	contentType  string = "application/json"
+	compressType string = "gzip"
+)
+
+// Структура для сбора и отправки метрик.
 type RuntimeMetrics struct {
 	RuntimeMemstats map[string]float64
 	PollCount       int64
@@ -38,16 +43,19 @@ type RuntimeMetrics struct {
 	pollInterval    time.Duration
 }
 
+// Структура для ошибки при отправке на сервер.
 type SendMetricsError struct {
 	Code      int       `json:"code"`
 	Message   string    `json:"message"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
+// Инициализицаия структуры для сбора и отправки метрик.
 func IntervalPin(pollIntervalFlag int) RuntimeMetrics {
 	return RuntimeMetrics{pollInterval: time.Duration(pollIntervalFlag), RuntimeMemstats: make(map[string]float64), PollCount: 0, RandomValue: 0}
 }
 
+// Добавление метрик в стрктуру RuntimeMetrics для будущей их отправки.
 func (m *RuntimeMetrics) AddValueMetric() error {
 
 	mapstats := make(map[string]float64)
@@ -97,6 +105,7 @@ func (m *RuntimeMetrics) AddValueMetric() error {
 	return nil
 }
 
+// Добавление метрик с помощью пакета gopsutil и сбор дополнительных метрик.
 func (m *RuntimeMetrics) AddVaueMetricGopsutil() error {
 	cpuStat, err := cpu.Times(true)
 	if err != nil {
@@ -117,6 +126,7 @@ func (m *RuntimeMetrics) AddVaueMetricGopsutil() error {
 	return nil
 }
 
+// Функция для отправления метрик на сервер пачками.
 func (m *RuntimeMetrics) jsonMetricsToBatch() []byte {
 	metrics := make([]models.Metrics, 0, len(m.RuntimeMemstats)+2)
 	for k, v := range m.RuntimeMemstats {
@@ -147,6 +157,7 @@ func (m *RuntimeMetrics) jsonMetricsToBatch() []byte {
 	return out
 }
 
+// Функция для отправление на сервер по одной метрике за запрос.
 func SendMetrics(res []byte, hash, hostpath string) error {
 	url := strings.Join([]string{"http:/", hostpath, "updates/"}, "/")
 
@@ -177,6 +188,7 @@ func SendMetrics(res []byte, hash, hostpath string) error {
 	return nil
 }
 
+// Функция которая добавляет и сжимает метрики для последующей отправки в канал.
 func (m *RuntimeMetrics) NewСollect(ctx context.Context, cancel context.CancelFunc, jobs chan []byte) {
 	for {
 		select {
@@ -200,6 +212,7 @@ func (m *RuntimeMetrics) NewСollect(ctx context.Context, cancel context.CancelF
 	}
 }
 
+// Функция которая добавляет и сжимает метрики для последующей отправки в канал.
 func (m *RuntimeMetrics) NewСollectMetricGopsutil(ctx context.Context, cancel context.CancelFunc, jobs chan []byte) {
 	for {
 		select {
@@ -221,6 +234,7 @@ func (m *RuntimeMetrics) NewСollectMetricGopsutil(ctx context.Context, cancel c
 	}
 }
 
+// Функция для сжатия данных.
 func gzipCompress(data []byte) ([]byte, error) {
 	var buf bytes.Buffer
 
@@ -239,6 +253,7 @@ func gzipCompress(data []byte) ([]byte, error) {
 	return buf.Bytes(), err
 }
 
+// Функция для отправки метрик на сервер.
 func SendMetricsGor(jobs <-chan []byte, runAddr, secretKey string) error {
 	for j := range jobs {
 

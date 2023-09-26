@@ -6,6 +6,7 @@ import (
 	"hash"
 )
 
+// Создаем хеш для его передачи на сервер.
 func CrateHash(secretKey string, data []byte, hashNew func() hash.Hash) string {
 	secretKeyToByte := []byte(secretKey)
 	h := hmac.New(hashNew, secretKeyToByte)

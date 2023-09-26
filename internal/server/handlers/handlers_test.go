@@ -11,6 +11,7 @@ import (
 	"github.com/Zagir2000/alert/internal/server/storage"
 	"github.com/d5/tengo/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestMetricHandler_MainPage(t *testing.T) {
@@ -74,4 +75,43 @@ func TestMetricHandler_MainPage(t *testing.T) {
 			assert.Equal(t, w.Code, tt.want.code)
 		})
 	}
+}
+
+func Example() {
+	//инициализируем логер
+	log, _ := logger.InitializeLogger("info")
+
+	ctx := context.Background()
+	//папка с миграциями
+	migrationsDir := "migrations"
+	//значение, указывающее, следует ли загружать ранее сохраненные значения из указанного файла при запуске сервера
+	restore := true
+	//time interval according to which the current server servers are kept on disk
+	//интервал времени, в течение которого текущие серверы сервера хранятся на диске
+	storeIntervall := 300
+	databaseDsn := "postgres://postgres:123456@localhost/metrics?sslmode=disable"
+	memStorageInterface, postgresDB, err := storage.NewStorage(ctx, migrationsDir, log, migrationsDir, restore, storeIntervall, databaseDsn)
+	if err != nil {
+		log.Fatal("Error in create storage", zap.Error(err))
+	}
+	if postgresDB != nil {
+		defer postgresDB.Close()
+	}
+	newHandStruct := MetricHandlerNew(memStorageInterface, postgresDB)
+	// Выполняем операцию получения метрик.
+	newHandStruct.GetAllMetrics(ctx, log)
+	// Выполняем операцию добавления метрики, который использует json формат.
+	newHandStruct.AddValueMetricsToJSON(ctx, log)
+	// Выполняем операцию получения метрик.
+	newHandStruct.GetNowValueMetrics(ctx, log)
+	// Выполняем операцию добавления метрик, который использует json формат.
+	newHandStruct.NewMetricsToJSON(ctx, log)
+	// Выполняем операцию проверки соединения базы данных.
+	newHandStruct.PingDBConnect(ctx, log)
+	// Выполняем операцию обновления метрики.
+	newHandStruct.UpdateNewMetrics(ctx, log)
+	//Ключ для подписи хэша
+	key := "secret"
+	// Выполняем операцию обновления метрик.
+	newHandStruct.UpdateNewMetricsBatch(ctx, log, key)
 }
