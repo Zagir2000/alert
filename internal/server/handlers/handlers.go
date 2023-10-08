@@ -18,11 +18,13 @@ import (
 	"go.uber.org/zap"
 )
 
+// Структура с бд, которую используют хэндеры.
 type MetricHandlerDB struct {
 	Storage storage.Repository
 	pgDB    *storage.PostgresDB
 }
 
+// Инициализация структуры MetricHandlerDB.
 func MetricHandlerNew(s storage.Repository, pgDB *storage.PostgresDB) *MetricHandlerDB {
 	return &MetricHandlerDB{
 		Storage: s,
@@ -30,6 +32,7 @@ func MetricHandlerNew(s storage.Repository, pgDB *storage.PostgresDB) *MetricHan
 	}
 }
 
+// Метод для получения всех метрик.
 func (m *MetricHandlerDB) GetAllMetrics(ctx context.Context, log *zap.Logger) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 
@@ -60,6 +63,7 @@ func (m *MetricHandlerDB) GetAllMetrics(ctx context.Context, log *zap.Logger) ht
 
 }
 
+// Метод для получения одной метрики.
 func (m *MetricHandlerDB) GetNowValueMetrics(ctx context.Context, log *zap.Logger) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodGet {
@@ -97,6 +101,7 @@ func (m *MetricHandlerDB) GetNowValueMetrics(ctx context.Context, log *zap.Logge
 
 }
 
+// Метод для обновления метрик.
 func (m *MetricHandlerDB) UpdateNewMetrics(ctx context.Context, log *zap.Logger) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodPost {
@@ -147,6 +152,7 @@ func (m *MetricHandlerDB) UpdateNewMetrics(ctx context.Context, log *zap.Logger)
 	}
 }
 
+// Метод для добавления метрики, который использует json формат.
 func (m *MetricHandlerDB) AddValueMetricsToJSON(ctx context.Context, log *zap.Logger) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 
@@ -199,6 +205,8 @@ func (m *MetricHandlerDB) AddValueMetricsToJSON(ctx context.Context, log *zap.Lo
 		res.Write(response)
 	}
 }
+
+// Метод для обновления метрик, который использует json формат.
 func (m *MetricHandlerDB) NewMetricsToJSON(ctx context.Context, log *zap.Logger) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodPost {
@@ -263,6 +271,7 @@ func (m *MetricHandlerDB) NewMetricsToJSON(ctx context.Context, log *zap.Logger)
 	}
 }
 
+// Метод для проверки соединения бд.
 func (m *MetricHandlerDB) PingDBConnect(ctx context.Context, log *zap.Logger) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodGet {
@@ -280,6 +289,7 @@ func (m *MetricHandlerDB) PingDBConnect(ctx context.Context, log *zap.Logger) ht
 	}
 }
 
+// Метод для обновления метрик, котрый использует пакеты.
 func (m *MetricHandlerDB) UpdateNewMetricsBatch(ctx context.Context, log *zap.Logger, keySecret string) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 

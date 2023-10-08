@@ -24,11 +24,13 @@ type PostgresDB struct {
 	rw   sync.RWMutex
 }
 
+// Проверка соденинения с базой данных.
 func (pgdb *PostgresDB) PingDB(ctx context.Context) error {
 	err := pgdb.pool.Ping(ctx)
 	return err
 }
 
+// Инициализация базы данных и применение миграцией.
 func InitDB(configDB string, log *zap.Logger, migratePath string) (*PostgresDB, error) {
 	err := runMigrations(configDB, migratePath)
 	if err != nil {
@@ -53,6 +55,7 @@ func InitDB(configDB string, log *zap.Logger, migratePath string) (*PostgresDB, 
 	return nil, fmt.Errorf("failed to create a connection pool: %w", err)
 }
 
+// Функция применение миграций.
 func runMigrations(dsn string, migratePath string) error {
 	m, err := migrate.New(fmt.Sprintf("file://%s", migratePath), dsn)
 	if err != nil {
@@ -66,10 +69,12 @@ func runMigrations(dsn string, migratePath string) error {
 	return nil
 }
 
+// Закрываем соедиение с бд.
 func (pgdb *PostgresDB) Close() {
 	pgdb.pool.Close()
 }
 
+// Добавляем метрику gauge в бд.
 func (pgdb *PostgresDB) AddGaugeValue(ctx context.Context, name string, value float64) error {
 	pgdb.rw.Lock()
 	defer pgdb.rw.Unlock()
@@ -87,6 +92,7 @@ func (pgdb *PostgresDB) AddGaugeValue(ctx context.Context, name string, value fl
 	return tx.Commit(ctx)
 }
 
+// Добавляем метрику counter в бд.
 func (pgdb *PostgresDB) AddCounterValue(ctx context.Context, name string, value int64) error {
 	pgdb.rw.Lock()
 	defer pgdb.rw.Unlock()
@@ -104,6 +110,7 @@ func (pgdb *PostgresDB) AddCounterValue(ctx context.Context, name string, value 
 	return tx.Commit(ctx)
 }
 
+// Получаем метрику gauge из бд.
 func (pgdb *PostgresDB) GetGauge(ctx context.Context, name string) (float64, bool) {
 	var value float64
 	row := pgdb.pool.QueryRow(ctx,
@@ -118,6 +125,7 @@ func (pgdb *PostgresDB) GetGauge(ctx context.Context, name string) (float64, boo
 	return value, true
 }
 
+// Получаем метрику counter из бд.
 func (pgdb *PostgresDB) GetCounter(ctx context.Context, name string) (int64, bool) {
 	var value int64
 	row := pgdb.pool.QueryRow(ctx,
@@ -131,6 +139,7 @@ func (pgdb *PostgresDB) GetCounter(ctx context.Context, name string) (int64, boo
 	return value, true
 }
 
+// Получаем все gauge метрики из бд.
 func (pgdb *PostgresDB) GetAllGaugeValues(ctx context.Context) map[string]float64 {
 	gaugeMetrics := make(map[string]float64)
 	var nameValue string
@@ -158,6 +167,7 @@ func (pgdb *PostgresDB) GetAllGaugeValues(ctx context.Context) map[string]float6
 	return gaugeMetrics
 }
 
+// Получаем все counter метрики из бд.
 func (pgdb *PostgresDB) GetAllCounterValues(ctx context.Context) map[string]int64 {
 	counterMetrics := make(map[string]int64)
 	var nameValue string
@@ -185,6 +195,7 @@ func (pgdb *PostgresDB) GetAllCounterValues(ctx context.Context) map[string]int6
 	return counterMetrics
 }
 
+// Добавляем все метрики в бд.
 func (pgdb *PostgresDB) AddAllValue(ctx context.Context, metrics []models.Metrics) error {
 	pgdb.rw.Lock()
 	defer pgdb.rw.Unlock()

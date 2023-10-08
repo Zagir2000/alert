@@ -7,6 +7,7 @@ import (
 	"hash"
 )
 
+// Проверка хэша при получении запроса
 func CheckHash(data []byte, secretKey, checksum string, hashNew func() hash.Hash) error {
 	secretKeyToByte := []byte(secretKey)
 	h := hmac.New(hashNew, secretKeyToByte)

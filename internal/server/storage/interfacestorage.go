@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Интерфейс который имплементирует все метода для сохранения в бд.
 type Repository interface {
 	AddGaugeValue(ctx context.Context, name string, value float64) error
 	AddCounterValue(ctx context.Context, name string, value int64) error
@@ -18,6 +19,7 @@ type Repository interface {
 	AddAllValue(ctx context.Context, metrics []models.Metrics) error
 }
 
+// Инициализируем базу данных.
 func NewStorage(ctx context.Context, migratePath string, log *zap.Logger, fileStoragePath string, restore bool, storeIntervall int, postgresDSN string) (Repository, *PostgresDB, error) {
 	if postgresDSN != "" {
 		DB, err := InitDB(postgresDSN, log, migratePath)
